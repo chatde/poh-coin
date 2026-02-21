@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
@@ -13,6 +13,10 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+export const viewport: Viewport = {
+  themeColor: "#00ff41",
+};
 
 export const metadata: Metadata = {
   title: "Project POH — Pursuit of Happiness Coin",
@@ -29,7 +33,6 @@ export const metadata: Metadata = {
     apple: "/logo/poh-token-256x256.png",
   },
   manifest: "/manifest.json",
-  themeColor: "#00ff41",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

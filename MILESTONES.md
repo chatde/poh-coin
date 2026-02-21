@@ -31,7 +31,8 @@
 - [x] Point projectpoh.com DNS to Vercel — A record + CNAME configured, SSL provisioning
 
 ## Phase 3: Testnet Integration
-- [ ] Connect website to testnet contracts
+- [x] Connect website to testnet contracts — ethers.js v6, contract ABIs, on-chain reads
+- [x] Impact Dashboard reads live data: charity balance, rewards pool, vesting %, on-chain nodes
 - [ ] Test wallet connection (MetaMask)
 - [ ] End-to-end: buy/sell/transfer fee simulation
 - [ ] Verify charity treasury accumulates fees
@@ -64,7 +65,7 @@
 - [x] **Add reward vesting to POHRewards.sol** — claimableNow + vestingAmount per epoch, releaseVested/Batch
 - [x] **Updated tests: 140/140 passing** (30 POHToken + 61 POHRewards + 48 POHNodeRegistry + 1 POHVesting)
 - [x] **Deployed all 5 contracts to Base Sepolia** — token distribution verified (50/20/10/20 split)
-- [ ] Run Slither on updated contracts
+- [x] Run Slither on all contracts — no critical findings (naming convention, timestamp usage only)
 - [ ] Run Mythril on updated contracts
 - [x] **Verify all 5 contracts on Basescan (Sepolia)** — source code verified
 
