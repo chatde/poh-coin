@@ -4,9 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Terminal, TerminalHeader } from "./components/Terminal";
 import MissionControl from "./components/MissionControl";
 import NodeMap from "./components/NodeMap";
+import FitnessPanel from "./components/FitnessPanel";
+import FitnessLeaderboard from "./components/FitnessLeaderboard";
 import { useCompute } from "./hooks/useCompute";
 import { useHeartbeat } from "./hooks/useHeartbeat";
 import { useBattery } from "./hooks/useBattery";
+import { useFitness } from "./hooks/useFitness";
 
 export default function MinePage() {
   const [deviceId, setDeviceId] = useState<string | null>(null);
@@ -18,10 +21,12 @@ export default function MinePage() {
   const [needsSetup, setNeedsSetup] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
   const [savingsWallet, setSavingsWallet] = useState<string | null>(null);
+  const [miningView, setMiningView] = useState<"compute" | "fitness" | "both">("both");
 
   const compute = useCompute(deviceId);
   const heartbeat = useHeartbeat(deviceId);
   const battery = useBattery();
+  const fitness = useFitness(walletAddress, deviceId);
 
   // Load device ID from localStorage on mount
   useEffect(() => {
@@ -98,6 +103,25 @@ export default function MinePage() {
     heartbeat.stop();
   }, [compute, heartbeat]);
 
+  const handleConnectWearable = useCallback(async () => {
+    if (!walletAddress || !deviceId) return;
+    try {
+      const res = await fetch("/api/mine/fitness/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress, deviceId }),
+      });
+      if (res.ok) {
+        const { widgetUrl } = await res.json();
+        if (widgetUrl) {
+          window.open(widgetUrl, "terra-connect", "width=500,height=700");
+        }
+      }
+    } catch {
+      // Will retry
+    }
+  }, [walletAddress, deviceId]);
+
   // Redirect to setup if needed
   if (needsSetup) {
     if (typeof window !== "undefined") {
@@ -112,6 +136,10 @@ export default function MinePage() {
       </Terminal>
     );
   }
+
+  // Combined earning rate display
+  const computeRate = compute.isMining ? "active" : "paused";
+  const fitnessRate = fitness.connected ? `${Math.round(fitness.todayEffort)} effort` : "not connected";
 
   return (
     <Terminal>
@@ -130,31 +158,76 @@ export default function MinePage() {
         </div>
       )}
 
+      {/* View toggle */}
+      <div className="flex gap-2 mb-4">
+        {(["both", "compute", "fitness"] as const).map((view) => (
+          <button
+            key={view}
+            onClick={() => setMiningView(view)}
+            className={`text-xs font-mono px-3 py-1 rounded border transition-colors ${
+              miningView === view
+                ? "border-green-500 text-green-400 bg-green-900/20"
+                : "border-green-900 text-green-700 hover:text-green-400"
+            }`}
+          >
+            {view.toUpperCase()}
+          </button>
+        ))}
+        <div className="flex-1" />
+        <div className="text-green-700 text-xs self-center">
+          Compute: {computeRate} | Fitness: {fitnessRate}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Main dashboard — 2 columns on desktop */}
         <div className="lg:col-span-2">
-          <MissionControl
-            status={compute.status}
-            taskDisplayName={compute.taskDisplayName}
-            progress={compute.progress}
-            progressStep={compute.progressStep}
-            tasksCompleted={compute.tasksCompleted}
-            totalComputeMs={compute.totalComputeMs}
-            points={points}
-            streak={streak}
-            epoch={epoch}
-            devices={deviceCount}
-            connected={heartbeat.connected}
-            batteryLevel={battery.level}
-            charging={battery.charging}
-            isMining={compute.isMining}
-            onStartMining={handleStartMining}
-            onStopMining={handleStopMining}
-          />
+          {(miningView === "both" || miningView === "compute") && (
+            <MissionControl
+              status={compute.status}
+              taskDisplayName={compute.taskDisplayName}
+              progress={compute.progress}
+              progressStep={compute.progressStep}
+              tasksCompleted={compute.tasksCompleted}
+              totalComputeMs={compute.totalComputeMs}
+              points={points}
+              streak={streak}
+              epoch={epoch}
+              devices={deviceCount}
+              connected={heartbeat.connected}
+              batteryLevel={battery.level}
+              charging={battery.charging}
+              isMining={compute.isMining}
+              onStartMining={handleStartMining}
+              onStopMining={handleStopMining}
+            />
+          )}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {/* Fitness Panel */}
+          {(miningView === "both" || miningView === "fitness") && (
+            <FitnessPanel
+              connected={fitness.connected}
+              provider={fitness.provider}
+              lastSync={fitness.lastSync}
+              todayEffort={fitness.todayEffort}
+              weekEffort={fitness.weekEffort}
+              streak={fitness.streak}
+              recentActivities={fitness.recentActivities}
+              syncing={fitness.syncing}
+              onSync={fitness.syncActivities}
+              onDisconnect={fitness.disconnect}
+              onConnect={handleConnectWearable}
+            />
+          )}
+
+          {/* Fitness Leaderboard */}
+          {(miningView === "both" || miningView === "fitness") && (
+            <FitnessLeaderboard walletAddress={walletAddress} />
+          )}
+
           <NodeMap deviceId={deviceId} walletAddress={walletAddress} />
 
           {/* Wallet Management */}
@@ -206,7 +279,7 @@ export default function MinePage() {
                 </div>
 
                 {/* Mnemonic Warning */}
-                {sessionStorage.getItem("poh-mnemonic") && (
+                {typeof sessionStorage !== "undefined" && sessionStorage.getItem("poh-mnemonic") && (
                   <div className="border border-yellow-800 rounded p-2">
                     <div className="text-yellow-500 text-xs font-bold mb-1">
                       BACKUP YOUR RECOVERY PHRASE
@@ -224,7 +297,7 @@ export default function MinePage() {
                 <div className="border-t border-green-900 pt-2">
                   <div className="text-green-700 text-xs mb-1">How Rewards Work</div>
                   <div className="text-green-800 text-xs space-y-1">
-                    <div>1. Mine and earn points each week</div>
+                    <div>1. Mine (compute + fitness) and earn points each week</div>
                     <div>2. Sunday: epoch closes, rewards calculated</div>
                     <div>3. Monday: merkle root posted (24h timelock)</div>
                     <div>4. Tuesday: claim your POH tokens</div>

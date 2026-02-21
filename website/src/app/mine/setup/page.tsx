@@ -9,7 +9,7 @@ import {
   BlinkingCursor,
 } from "../components/Terminal";
 
-type Step = "wallet" | "permissions" | "savings";
+type Step = "wallet" | "permissions" | "wearable" | "benchmark" | "savings";
 
 export default function SetupPage() {
   const [step, setStep] = useState<Step>("wallet");
@@ -19,6 +19,15 @@ export default function SetupPage() {
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fingerprintHash, setFingerprintHash] = useState<string | null>(null);
+  const [sigVerified, setSigVerified] = useState(false);
+  const [fitnessProvider, setFitnessProvider] = useState<string | null>(null);
+  const [benchmarkTier, setBenchmarkTier] = useState<number | null>(null);
+  const [benchmarking, setBenchmarking] = useState(false);
+  // Store ethers wallet for signing
+  const [ethersWallet, setEthersWallet] = useState<ethers.HDNodeWallet | null>(null);
+
+  const totalSteps = 5;
 
   // Generate a unique device ID
   const generateDeviceId = useCallback(() => {
@@ -27,18 +36,68 @@ export default function SetupPage() {
     return Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("");
   }, []);
 
-  // Step 1: Create a new wallet using ethers.js (proper Keccak-256 derivation)
+  // Generate device fingerprint
+  const generateFingerprint = useCallback(async (): Promise<string> => {
+    try {
+      // Canvas fingerprint
+      const canvas = document.createElement("canvas");
+      canvas.width = 200;
+      canvas.height = 50;
+      const ctx = canvas.getContext("2d");
+      let canvasData = "no-canvas";
+      if (ctx) {
+        ctx.textBaseline = "top";
+        ctx.font = "14px Arial";
+        ctx.fillStyle = "#f60";
+        ctx.fillRect(125, 1, 62, 20);
+        ctx.fillStyle = "#069";
+        ctx.fillText("POH DePIN", 2, 15);
+        canvasData = canvas.toDataURL();
+      }
+
+      // WebGL fingerprint
+      let webglData = "no-webgl";
+      try {
+        const glCanvas = document.createElement("canvas");
+        const gl = glCanvas.getContext("webgl");
+        if (gl) {
+          const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+          const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : "unknown";
+          const vendor = debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : "unknown";
+          webglData = `${vendor}|${renderer}`;
+        }
+      } catch { /* noop */ }
+
+      // Hardware info
+      const hwData = [
+        `screen:${screen.width}x${screen.height}x${screen.colorDepth}`,
+        `cores:${navigator.hardwareConcurrency || "unknown"}`,
+        `platform:${navigator.platform}`,
+        `tz:${Intl.DateTimeFormat().resolvedOptions().timeZone}`,
+        `touch:${navigator.maxTouchPoints}`,
+      ].join("|");
+
+      const combined = [canvasData, webglData, hwData].join("||");
+      const encoder = new TextEncoder();
+      const data = encoder.encode(combined);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      return Array.from(new Uint8Array(hashBuffer))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    } catch {
+      return "fingerprint-error";
+    }
+  }, []);
+
+  // Step 1: Create a new wallet
   const handleCreateWallet = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Generate a proper Ethereum wallet with correct key derivation
       const wallet = ethers.Wallet.createRandom();
       const address = wallet.address;
 
-      // Store encrypted mnemonic in sessionStorage (clears on browser close)
-      // Private key is NEVER stored in localStorage for security
       sessionStorage.setItem("poh-mnemonic", wallet.mnemonic?.phrase || "");
       localStorage.setItem("poh-wallet", address);
 
@@ -48,29 +107,29 @@ export default function SetupPage() {
       setWalletAddress(address);
       setDeviceId(newDeviceId);
       setWalletMethod("create");
+      setEthersWallet(wallet);
       setStep("permissions");
-    } catch (err) {
+    } catch {
       setError("Failed to create wallet. Please try again.");
     } finally {
       setLoading(false);
     }
   }, [generateDeviceId]);
 
-  // Step 1: Connect existing wallet (WalletConnect placeholder)
+  // Step 1: Connect existing wallet
   const handleConnectWallet = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Check if MetaMask or similar is available
-      const ethereum = (window as unknown as { ethereum?: { request: (args: { method: string }) => Promise<string[]> } }).ethereum;
+      const ethereum = (window as unknown as { ethereum?: { request: (args: { method: string; params?: unknown[] }) => Promise<string[] | string> } }).ethereum;
       if (!ethereum) {
         setError("No wallet detected. Install MetaMask or use 'Create New Wallet'.");
         setLoading(false);
         return;
       }
 
-      const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+      const accounts = await ethereum.request({ method: "eth_requestAccounts" }) as string[];
       if (accounts.length === 0) {
         setError("No accounts found.");
         setLoading(false);
@@ -87,20 +146,53 @@ export default function SetupPage() {
       setDeviceId(newDeviceId);
       setWalletMethod("connect");
       setStep("permissions");
-    } catch (err) {
+    } catch {
       setError("Failed to connect wallet. Please try again.");
     } finally {
       setLoading(false);
     }
   }, [generateDeviceId]);
 
-  // Step 2: Request permissions and register device
+  // Step 2: Request permissions, sign message, generate fingerprint, register device
   const handlePermissions = useCallback(async () => {
     if (!deviceId || !walletAddress) return;
     setLoading(true);
     setError(null);
 
     try {
+      // Generate device fingerprint
+      const fp = await generateFingerprint();
+      setFingerprintHash(fp);
+
+      // Sign registration message (EIP-191)
+      let signature: string | undefined;
+      let signedMessage: string | undefined;
+      const timestamp = Date.now().toString();
+
+      const message = `POH Mining Registration\nWallet: ${walletAddress}\nDevice: ${deviceId}\nTimestamp: ${timestamp}`;
+
+      if (ethersWallet) {
+        // Created wallet — sign with ethers
+        signature = await ethersWallet.signMessage(message);
+        signedMessage = message;
+        setSigVerified(true);
+      } else if (walletMethod === "connect") {
+        // Connected wallet — sign with provider
+        try {
+          const ethereum = (window as unknown as { ethereum?: { request: (args: { method: string; params: unknown[] }) => Promise<string> } }).ethereum;
+          if (ethereum) {
+            signature = await ethereum.request({
+              method: "personal_sign",
+              params: [message, walletAddress],
+            });
+            signedMessage = message;
+            setSigVerified(true);
+          }
+        } catch {
+          // Signature optional — continue without
+        }
+      }
+
       // Register device with backend
       const res = await fetch("/api/mine/register", {
         method: "POST",
@@ -108,7 +200,11 @@ export default function SetupPage() {
         body: JSON.stringify({
           deviceId,
           walletAddress,
-          tier: 1, // Data node
+          tier: 1,
+          signature,
+          signedMessage,
+          timestamp,
+          fingerprint: fp,
         }),
       });
 
@@ -119,15 +215,131 @@ export default function SetupPage() {
         return;
       }
 
-      setStep("savings");
+      setStep("wearable");
     } catch {
       setError("Network error. Please check your connection.");
     } finally {
       setLoading(false);
     }
-  }, [deviceId, walletAddress]);
+  }, [deviceId, walletAddress, generateFingerprint, ethersWallet, walletMethod]);
 
-  // Step 3: Set savings wallet (optional)
+  // Step 3: Connect wearable (optional)
+  const handleConnectWearable = useCallback(async () => {
+    if (!walletAddress || !deviceId) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/mine/fitness/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress, deviceId }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Failed to start wearable connection.");
+        setLoading(false);
+        return;
+      }
+
+      const { widgetUrl } = await res.json();
+
+      // Open Terra widget in a popup
+      const popup = window.open(widgetUrl, "terra-connect", "width=500,height=700");
+
+      // Poll for popup close / connection success
+      const checkInterval = setInterval(async () => {
+        if (popup?.closed) {
+          clearInterval(checkInterval);
+          setLoading(false);
+
+          // Check if connection was stored
+          const checkRes = await fetch(`/api/mine/fitness/sync`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ walletAddress, deviceId }),
+          });
+
+          if (checkRes.ok) {
+            const data = await checkRes.json();
+            if (data.synced >= 0) {
+              setFitnessProvider("connected");
+            }
+          }
+        }
+      }, 1000);
+    } catch {
+      setError("Failed to connect wearable.");
+      setLoading(false);
+    }
+  }, [walletAddress, deviceId]);
+
+  const handleSkipWearable = useCallback(() => {
+    setStep("benchmark");
+  }, []);
+
+  // Step 4: Device benchmark
+  const handleBenchmark = useCallback(async () => {
+    if (!deviceId) return;
+    setBenchmarking(true);
+    setError(null);
+
+    try {
+      // Simple CPU benchmark: time a tight loop
+      const start = performance.now();
+      let sum = 0;
+      for (let i = 0; i < 5_000_000; i++) {
+        sum += Math.sqrt(i) * Math.sin(i);
+      }
+      const cpuScoreMs = Math.round(performance.now() - start);
+      // Prevent dead code elimination
+      if (sum === Infinity) console.log(sum);
+
+      const cores = navigator.hardwareConcurrency || 1;
+      const memory = (navigator as unknown as { deviceMemory?: number }).deviceMemory || 2;
+      const maxMemoryMb = memory * 1024;
+
+      // Determine tier
+      let tier = 1;
+      if (cpuScoreMs < 200 && cores >= 8 && memory >= 8) {
+        tier = 3; // Desktop
+      } else if (cpuScoreMs < 500 && cores >= 4 && memory >= 4) {
+        tier = 2; // Laptop
+      }
+
+      // Store benchmark in DB
+      await fetch("/api/mine/benchmark", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          deviceId,
+          cpuScoreMs: cpuScoreMs,
+          maxMemoryMb: maxMemoryMb,
+          cores,
+          capabilityTier: tier,
+        }),
+      });
+
+      setBenchmarkTier(tier);
+
+      // Also store client-side for local reference
+      localStorage.setItem("poh-benchmark", JSON.stringify({
+        cpu_score_ms: cpuScoreMs,
+        max_memory_mb: maxMemoryMb,
+        cores,
+        capability_tier: tier,
+      }));
+
+      setStep("savings");
+    } catch {
+      setError("Benchmark failed.");
+    } finally {
+      setBenchmarking(false);
+    }
+  }, [deviceId]);
+
+  // Step 5: Set savings wallet (optional)
   const handleSavingsWallet = useCallback(async () => {
     if (savingsWallet && !/^0x[0-9a-fA-F]{40}$/.test(savingsWallet)) {
       setError("Invalid address format. Must be 0x followed by 40 hex characters.");
@@ -138,11 +350,10 @@ export default function SetupPage() {
       localStorage.setItem("poh-savings-wallet", savingsWallet);
     }
 
-    // Navigate to mining dashboard
     window.location.href = "/mine";
   }, [savingsWallet]);
 
-  const stepNumber = step === "wallet" ? 1 : step === "permissions" ? 2 : 3;
+  const stepNumber = step === "wallet" ? 1 : step === "permissions" ? 2 : step === "wearable" ? 3 : step === "benchmark" ? 4 : 5;
 
   return (
     <Terminal>
@@ -151,7 +362,7 @@ export default function SetupPage() {
       <div className="max-w-lg mx-auto">
         {/* Progress */}
         <div className="flex gap-2 mb-6">
-          {[1, 2, 3].map((n) => (
+          {[1, 2, 3, 4, 5].map((n) => (
             <div
               key={n}
               className={`flex-1 h-1 rounded ${
@@ -162,7 +373,7 @@ export default function SetupPage() {
         </div>
 
         <div className="text-green-500 text-xs uppercase tracking-widest mb-4">
-          Setup — Step {stepNumber} of 3
+          Setup — Step {stepNumber} of {totalSteps}
         </div>
 
         {/* Step 1: Connect Wallet */}
@@ -211,7 +422,7 @@ export default function SetupPage() {
           </div>
         )}
 
-        {/* Step 2: Permissions */}
+        {/* Step 2: Permissions + Signature + Fingerprint */}
         {step === "permissions" && (
           <div className="space-y-4">
             <TerminalLine prefix="$">
@@ -236,6 +447,14 @@ export default function SetupPage() {
                   <span className="text-green-400">[+]</span>
                   <span>Battery monitoring — Auto-throttle to protect your device</span>
                 </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-green-400">[+]</span>
+                  <span>Wallet signature — Cryptographically verify device ownership</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-green-400">[+]</span>
+                  <span>Device fingerprint — Sybil resistance (one device per wallet)</span>
+                </div>
               </div>
 
               <button
@@ -243,18 +462,121 @@ export default function SetupPage() {
                 disabled={loading}
                 className="w-full border border-green-500 text-green-400 py-3 px-4 rounded font-mono text-sm hover:bg-green-900/30 transition-colors mt-4"
               >
-                {loading ? "REGISTERING..." : "[ AUTHORIZE & REGISTER DEVICE ]"}
+                {loading ? "SIGNING & REGISTERING..." : "[ SIGN & REGISTER DEVICE ]"}
               </button>
             </div>
 
             <div className="text-green-900 text-xs">
-              Mining only runs while this page is open. Battery safety:
-              throttle at 40C, stop at 45C. Compute only while charging.
+              Your wallet will sign a registration message to prove ownership.
+              This does not cost gas.
             </div>
           </div>
         )}
 
-        {/* Step 3: Savings Wallet */}
+        {/* Step 3: Connect Wearable (Optional) */}
+        {step === "wearable" && (
+          <div className="space-y-4">
+            <TerminalLine prefix="$">
+              DEVICE REGISTERED {sigVerified ? "(SIGNATURE VERIFIED)" : ""}
+            </TerminalLine>
+            <TerminalLine prefix="$">
+              CONNECT WEARABLE FOR FITNESS MINING (OPTIONAL)
+            </TerminalLine>
+
+            <div className="border border-green-800 rounded p-4 space-y-3">
+              <div className="text-green-400 text-sm mb-2">
+                Earn POH by exercising — connect your wearable
+              </div>
+              <div className="text-green-700 text-xs mb-3">
+                Link Apple Health, Garmin, Strava, or Fitbit via Terra API.
+                Your workouts earn Effort Score points alongside compute mining.
+                Both paths share the same daily reward pool.
+              </div>
+
+              {fitnessProvider ? (
+                <div className="border border-green-500 rounded p-3 text-green-400 text-sm">
+                  Wearable connected! Provider: {fitnessProvider}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <button
+                    onClick={handleConnectWearable}
+                    disabled={loading}
+                    className="w-full border border-green-600 text-green-400 py-3 px-4 rounded font-mono text-sm hover:bg-green-900/30 transition-colors"
+                  >
+                    {loading ? "CONNECTING..." : "[ CONNECT WEARABLE ]"}
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={handleSkipWearable}
+                className="w-full text-green-700 text-xs hover:text-green-400 transition-colors mt-2"
+              >
+                {fitnessProvider ? "[ CONTINUE ]" : "[ SKIP — COMPUTE MINING ONLY ]"}
+              </button>
+            </div>
+
+            <div className="text-green-900 text-xs">
+              Wearable connection is optional. You can always add it later from the mining dashboard.
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Device Benchmark */}
+        {step === "benchmark" && (
+          <div className="space-y-4">
+            <TerminalLine prefix="$">
+              BENCHMARKING DEVICE CAPABILITIES...
+            </TerminalLine>
+
+            <div className="border border-green-800 rounded p-4 space-y-3">
+              <div className="text-green-400 text-sm mb-2">
+                Device Performance Test
+              </div>
+              <div className="text-green-700 text-xs mb-3">
+                A quick benchmark determines your device tier, which controls
+                task difficulty and compute point scaling.
+              </div>
+
+              {benchmarkTier !== null ? (
+                <div className="border border-green-500 rounded p-3">
+                  <div className="text-green-400 text-sm">
+                    Capability Tier: <span className="font-bold">
+                      {benchmarkTier === 3 ? "3 (Desktop)" : benchmarkTier === 2 ? "2 (Laptop)" : "1 (Phone)"}
+                    </span>
+                  </div>
+                  <div className="text-green-700 text-xs mt-1">
+                    {benchmarkTier === 3
+                      ? "High-performance: 150-300 residue proteins, 256x256 climate grids"
+                      : benchmarkTier === 2
+                      ? "Mid-range: 50-150 residue proteins, 128x128 climate grids"
+                      : "Mobile: 20-50 residue proteins, 64x64 climate grids"}
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={handleBenchmark}
+                  disabled={benchmarking}
+                  className="w-full border border-green-500 text-green-400 py-3 px-4 rounded font-mono text-sm hover:bg-green-900/30 transition-colors"
+                >
+                  {benchmarking ? "BENCHMARKING..." : "[ RUN BENCHMARK ]"}
+                </button>
+              )}
+
+              {benchmarkTier !== null && (
+                <button
+                  onClick={() => setStep("savings")}
+                  className="w-full border border-green-500 text-green-400 py-3 px-4 rounded font-mono text-sm hover:bg-green-900/30 transition-colors mt-2"
+                >
+                  [ CONTINUE ]
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Step 5: Savings Wallet */}
         {step === "savings" && (
           <div className="space-y-4">
             <TerminalLine prefix="$">

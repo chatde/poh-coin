@@ -9,15 +9,17 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- ── Nodes ────────────────────────────────────────────────────
 -- Mining devices registered to the network
 CREATE TABLE nodes (
-  device_id       TEXT PRIMARY KEY,
-  wallet_address  TEXT NOT NULL,
-  tier            SMALLINT NOT NULL DEFAULT 1 CHECK (tier IN (1, 2)),
-  h3_cell         TEXT,                           -- H3 hex at resolution 7 (~5km²)
-  reputation      INTEGER NOT NULL DEFAULT 10,    -- 0-100 scale, start at 10
-  registered_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  last_heartbeat  TIMESTAMPTZ,
-  is_active       BOOLEAN NOT NULL DEFAULT TRUE,
-  trust_week      SMALLINT NOT NULL DEFAULT 1     -- 1-4, week of trust ramp
+  device_id          TEXT PRIMARY KEY,
+  wallet_address     TEXT NOT NULL,
+  tier               SMALLINT NOT NULL DEFAULT 1 CHECK (tier IN (1, 2)),
+  h3_cell            TEXT,                           -- H3 hex at resolution 7 (~5km²)
+  reputation         INTEGER NOT NULL DEFAULT 10,    -- 0-100 scale, start at 10
+  registered_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_heartbeat     TIMESTAMPTZ,
+  is_active          BOOLEAN NOT NULL DEFAULT TRUE,
+  trust_week         SMALLINT NOT NULL DEFAULT 1,    -- 1-4, week of trust ramp
+  fingerprint_hash   TEXT,                           -- SHA-256 device fingerprint
+  signature_verified BOOLEAN NOT NULL DEFAULT FALSE  -- EIP-191 wallet signature verified
 );
 
 CREATE INDEX idx_nodes_wallet ON nodes (wallet_address);
@@ -28,10 +30,15 @@ CREATE INDEX idx_nodes_active ON nodes (is_active) WHERE is_active = TRUE;
 -- WASM work units distributed to phones
 CREATE TABLE compute_tasks (
   task_id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  task_type       TEXT NOT NULL CHECK (task_type IN ('protein', 'climate', 'signal')),
+  task_type       TEXT NOT NULL CHECK (task_type IN ('protein', 'climate', 'signal', 'drugscreen', 'fitness_verify')),
   payload         JSONB NOT NULL,                 -- Task parameters
   difficulty      SMALLINT NOT NULL DEFAULT 1,    -- Expected relative difficulty
-  status          TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'assigned', 'completed', 'failed')),
+  status          TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'assigned', 'completed', 'failed', 'ai_rejected')),
+  source          TEXT,                           -- Data provenance (e.g. 'rcsb_pdb', 'usgs', 'terra')
+  priority        SMALLINT NOT NULL DEFAULT 5,    -- Lower = higher priority (fitness_verify = 3)
+  deadline        TIMESTAMPTZ,                    -- Optional deadline for time-sensitive tasks
+  seed            TEXT,                           -- Deterministic seed for reproducibility
+  task_version    TEXT DEFAULT '2.0.0',           -- Version for backward compat
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -40,14 +47,17 @@ CREATE INDEX idx_tasks_status ON compute_tasks (status) WHERE status = 'pending'
 -- ── Task Assignments ─────────────────────────────────────────
 -- Tracks which devices are assigned to which tasks (2-of-3 redundancy)
 CREATE TABLE task_assignments (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  task_id         UUID NOT NULL REFERENCES compute_tasks(task_id),
-  device_id       TEXT NOT NULL REFERENCES nodes(device_id),
-  result          JSONB,
-  compute_time_ms INTEGER,
-  submitted_at    TIMESTAMPTZ,
-  is_match        BOOLEAN,                        -- NULL until verified
-  assigned_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  task_id           UUID NOT NULL REFERENCES compute_tasks(task_id),
+  device_id         TEXT NOT NULL REFERENCES nodes(device_id),
+  result            JSONB,
+  compute_time_ms   INTEGER,
+  submitted_at      TIMESTAMPTZ,
+  is_match          BOOLEAN,                        -- NULL until verified
+  computation_proof JSONB,                          -- {inputHash, outputHash, intermediateHashes, workerVersion}
+  ai_confidence     NUMERIC,                        -- AI verifier confidence score
+  ai_flags          JSONB,                          -- AI verifier flags
+  assigned_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_assignments_task ON task_assignments (task_id);
@@ -61,9 +71,11 @@ CREATE TABLE heartbeats (
   timestamp       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   battery_pct     SMALLINT,
   temperature_c   SMALLINT,                       -- Device temp for throttle monitoring
-  compute_status  TEXT CHECK (compute_status IN ('active', 'throttled', 'idle', 'stopped')),
+  compute_status  TEXT CHECK (compute_status IN ('active', 'throttled', 'idle', 'stopped', 'pending')),
   challenge       TEXT NOT NULL,
-  response        TEXT NOT NULL
+  response        TEXT,
+  memory_usage_mb INTEGER,                        -- Performance API memory tracking
+  worker_active   BOOLEAN                         -- Whether compute worker is running
 );
 
 CREATE INDEX idx_heartbeats_device ON heartbeats (device_id, timestamp DESC);
@@ -164,6 +176,117 @@ CREATE TABLE streaks (
   PRIMARY KEY (wallet_address)
 );
 
+-- ── Data Cache ──────────────────────────────────────────────────
+-- Caches external API responses (RCSB PDB, USGS, NOAA, NCI) with 24hr TTL
+CREATE TABLE data_cache (
+  cache_key   TEXT PRIMARY KEY,
+  data        JSONB NOT NULL,
+  source_url  TEXT NOT NULL,
+  fetched_at  TIMESTAMPTZ DEFAULT NOW(),
+  expires_at  TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX idx_data_cache_expires ON data_cache (expires_at);
+
+-- ── Fitness Connections ─────────────────────────────────────────
+-- Terra API wearable connections (Apple Health, Garmin, Strava, Fitbit)
+CREATE TABLE fitness_connections (
+  id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  wallet_address  TEXT NOT NULL,
+  device_id       TEXT NOT NULL REFERENCES nodes(device_id),
+  terra_user_id   TEXT UNIQUE NOT NULL,
+  provider        TEXT NOT NULL,                   -- 'apple_health', 'garmin', 'strava', 'fitbit'
+  connected_at    TIMESTAMPTZ DEFAULT NOW(),
+  last_sync       TIMESTAMPTZ,
+  is_active       BOOLEAN DEFAULT TRUE
+);
+
+CREATE INDEX idx_fitness_conn_wallet ON fitness_connections (wallet_address);
+CREATE INDEX idx_fitness_conn_device ON fitness_connections (device_id);
+
+-- ── Fitness Activities ──────────────────────────────────────────
+-- Individual workout/activity records from wearables
+CREATE TABLE fitness_activities (
+  id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  wallet_address  TEXT NOT NULL,
+  device_id       TEXT NOT NULL REFERENCES nodes(device_id),
+  activity_hash   TEXT UNIQUE NOT NULL,            -- dedup key: hash(user+start+type+duration)
+  activity_type   TEXT NOT NULL,                   -- 'run', 'walk', 'cycle', 'swim', 'workout'
+  duration_min    NUMERIC NOT NULL,
+  active_minutes  NUMERIC NOT NULL,
+  avg_heart_rate  SMALLINT,
+  hr_zone_minutes JSONB,                          -- {zone1: 5, zone2: 10, zone3: 8, zone4: 2, zone5: 0}
+  calories        NUMERIC,
+  distance_m      NUMERIC,
+  effort_score    NUMERIC NOT NULL,
+  source_provider TEXT NOT NULL,
+  raw_data_hash   TEXT NOT NULL,                   -- SHA-256 of raw Terra payload for audit
+  verified        BOOLEAN DEFAULT FALSE,
+  submitted_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_fitness_activities_wallet ON fitness_activities (wallet_address);
+CREATE INDEX idx_fitness_activities_device ON fitness_activities (device_id);
+CREATE INDEX idx_fitness_activities_unverified ON fitness_activities (verified) WHERE verified = FALSE;
+
+-- ── Device Fingerprints ─────────────────────────────────────────
+-- Canvas + WebGL + audio fingerprints for sybil resistance
+CREATE TABLE device_fingerprints (
+  fingerprint_hash TEXT PRIMARY KEY,
+  device_id        TEXT NOT NULL REFERENCES nodes(device_id),
+  wallet_address   TEXT NOT NULL,
+  created_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_fingerprints_wallet ON device_fingerprints (wallet_address);
+
+-- ── Rate Limits ─────────────────────────────────────────────────
+-- Sliding window counters for registration, tasks, submissions, fitness
+CREATE TABLE rate_limits (
+  key          TEXT NOT NULL,
+  window_start TIMESTAMPTZ NOT NULL,
+  count        INTEGER DEFAULT 1,
+  PRIMARY KEY (key, window_start)
+);
+
+CREATE INDEX idx_rate_limits_key ON rate_limits (key);
+
+-- ── Verification Failures ───────────────────────────────────────
+-- Track compute outliers, proof mismatches, and fitness fraud
+CREATE TABLE verification_failures (
+  id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  device_id    TEXT NOT NULL REFERENCES nodes(device_id),
+  task_id      UUID NOT NULL,
+  failure_type TEXT NOT NULL,                     -- 'consensus_outlier', 'reference_mismatch', 'proof_invalid', 'fitness_fraud'
+  penalty      INTEGER NOT NULL,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_vf_device ON verification_failures (device_id);
+
+-- ── Device Benchmarks ───────────────────────────────────────────
+-- CPU/memory/core benchmark results for task difficulty scaling
+CREATE TABLE device_benchmarks (
+  device_id       TEXT PRIMARY KEY REFERENCES nodes(device_id),
+  cpu_score_ms    INTEGER NOT NULL,
+  max_memory_mb   INTEGER NOT NULL,
+  cores           INTEGER NOT NULL,
+  capability_tier SMALLINT DEFAULT 1,              -- 1=phone, 2=laptop, 3=desktop
+  benchmarked_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ── Quality Scores ──────────────────────────────────────────────
+-- Rolling 30-day quality metrics per device
+CREATE TABLE quality_scores (
+  device_id          TEXT PRIMARY KEY REFERENCES nodes(device_id),
+  total_tasks_30d    INTEGER DEFAULT 0,
+  verified_30d       INTEGER DEFAULT 0,
+  fitness_verified   INTEGER DEFAULT 0,
+  quality_pct        NUMERIC DEFAULT 0,
+  uptime_pct         NUMERIC DEFAULT 0,
+  computed_at        TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ── Network Stats (materialized view for public API) ─────────
 CREATE MATERIALIZED VIEW network_stats AS
 SELECT
@@ -189,7 +312,7 @@ RETURNS TABLE (wallet_address TEXT, poh_amount NUMERIC) AS $$
   LIMIT limit_count;
 $$ LANGUAGE sql STABLE;
 
--- Get an available task for a device (not already assigned to this device, fewer than 3 assignments)
+-- Get an available task for a device (priority-ordered, not already assigned, fewer than 3 assignments)
 CREATE OR REPLACE FUNCTION get_available_task(p_device_id TEXT)
 RETURNS TABLE (task_id UUID, task_type TEXT, payload JSONB, difficulty SMALLINT) AS $$
   SELECT ct.task_id, ct.task_type, ct.payload, ct.difficulty
@@ -201,7 +324,7 @@ RETURNS TABLE (task_id UUID, task_type TEXT, payload JSONB, difficulty SMALLINT)
     AND (
       SELECT COUNT(*) FROM task_assignments ta WHERE ta.task_id = ct.task_id
     ) < 3
-  ORDER BY ct.created_at ASC
+  ORDER BY ct.priority ASC, ct.created_at ASC
   LIMIT 1;
 $$ LANGUAGE sql STABLE;
 
@@ -217,6 +340,14 @@ ALTER TABLE rewards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE referrals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE streaks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE data_cache ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fitness_connections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fitness_activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE device_fingerprints ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE verification_failures ENABLE ROW LEVEL SECURITY;
+ALTER TABLE device_benchmarks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quality_scores ENABLE ROW LEVEL SECURITY;
 
 -- Service role (backend API) can do everything
 -- These policies allow the Supabase service_role key full access
@@ -238,3 +369,11 @@ CREATE POLICY "Service full access rewards" ON rewards FOR ALL TO service_role U
 CREATE POLICY "Service full access referrals" ON referrals FOR ALL TO service_role USING (true);
 CREATE POLICY "Service full access achievements" ON achievements FOR ALL TO service_role USING (true);
 CREATE POLICY "Service full access streaks" ON streaks FOR ALL TO service_role USING (true);
+CREATE POLICY "Service full access data_cache" ON data_cache FOR ALL TO service_role USING (true);
+CREATE POLICY "Service full access fitness_connections" ON fitness_connections FOR ALL TO service_role USING (true);
+CREATE POLICY "Service full access fitness_activities" ON fitness_activities FOR ALL TO service_role USING (true);
+CREATE POLICY "Service full access device_fingerprints" ON device_fingerprints FOR ALL TO service_role USING (true);
+CREATE POLICY "Service full access rate_limits" ON rate_limits FOR ALL TO service_role USING (true);
+CREATE POLICY "Service full access verification_failures" ON verification_failures FOR ALL TO service_role USING (true);
+CREATE POLICY "Service full access device_benchmarks" ON device_benchmarks FOR ALL TO service_role USING (true);
+CREATE POLICY "Service full access quality_scores" ON quality_scores FOR ALL TO service_role USING (true);

@@ -10,6 +10,8 @@ interface BatteryState {
   shouldThrottle: boolean;
   shouldStop: boolean;
   supported: boolean;
+  memoryUsageMb: number | null; // Performance API memory tracking
+  workerActive: boolean;
 }
 
 interface BatteryManager {
@@ -17,6 +19,12 @@ interface BatteryManager {
   charging: boolean;
   addEventListener(type: string, listener: () => void): void;
   removeEventListener(type: string, listener: () => void): void;
+}
+
+interface PerformanceMemory {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
 }
 
 export function useBattery() {
@@ -27,6 +35,8 @@ export function useBattery() {
     shouldThrottle: false,
     shouldStop: false,
     supported: false,
+    memoryUsageMb: null,
+    workerActive: false,
   });
 
   const batteryRef = useRef<BatteryManager | null>(null);
@@ -44,6 +54,21 @@ export function useBattery() {
       shouldStop: s.temperature !== null ? s.temperature >= STOP_TEMP_C : !charging,
       shouldThrottle: s.temperature !== null ? s.temperature >= THROTTLE_TEMP_C : false,
     }));
+  }, []);
+
+  // Track memory usage via Performance API
+  useEffect(() => {
+    const updateMemory = () => {
+      const perf = performance as unknown as { memory?: PerformanceMemory };
+      if (perf.memory) {
+        const usedMb = Math.round(perf.memory.usedJSHeapSize / (1024 * 1024));
+        setState((s) => ({ ...s, memoryUsageMb: usedMb }));
+      }
+    };
+
+    updateMemory();
+    const interval = setInterval(updateMemory, 30_000); // Every 30s
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -77,7 +102,6 @@ export function useBattery() {
 
     return () => {
       cancelled = true;
-      // Properly clean up battery event listeners
       if (batteryRef.current && handlerRef.current) {
         batteryRef.current.removeEventListener("levelchange", handlerRef.current);
         batteryRef.current.removeEventListener("chargingchange", handlerRef.current);
@@ -85,5 +109,10 @@ export function useBattery() {
     };
   }, [updateBattery]);
 
-  return state;
+  /** Update worker active status (called by useCompute) */
+  const setWorkerActive = useCallback((active: boolean) => {
+    setState((s) => ({ ...s, workerActive: active }));
+  }, []);
+
+  return { ...state, setWorkerActive };
 }

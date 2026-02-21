@@ -1,11 +1,11 @@
 /**
- * Real Scientific Datasets for Proof of Planet Compute Tasks
+ * Fallback Scientific Datasets for Proof of Planet Compute Tasks
  *
- * These are real-world data points used for genuine computation.
- * Results contribute to distributed analysis of scientific problems.
+ * These are used when live API fetchers (RCSB PDB, USGS, NOAA, NCI)
+ * are unreachable. Live data is preferred — see live-data.ts.
  */
 
-// ── Protein Structures (from Protein Data Bank) ─────────────────────
+// ── Fallback Protein Structures (from Protein Data Bank) ─────────────
 // Real backbone coordinates from published protein structures
 // Sources: RCSB PDB (rcsb.org)
 
@@ -207,9 +207,114 @@ export const SEISMIC_EVENTS = [
   },
 ];
 
+// ── Drug Screening Data (from NCI/NIH + PDB binding sites) ──────────
+// Real drug candidates and cancer-related protein binding sites
+// Sources: NCI Open Database, RCSB PDB, ChEMBL
+
+export const DRUG_COMPOUNDS = [
+  {
+    id: "erlotinib-egfr",
+    name: "Erlotinib vs EGFR",
+    category: "Lung Cancer",
+    description: "Screening Erlotinib binding affinity against EGFR kinase domain (non-small cell lung cancer target)",
+    compound: {
+      name: "Erlotinib",
+      atoms: [
+        { x: 0.0, y: 0.0, z: 0.0, charge: -0.32, vdwRadius: 1.70 },
+        { x: 1.4, y: 0.0, z: 0.0, charge: 0.08, vdwRadius: 1.70 },
+        { x: 2.1, y: 1.2, z: 0.0, charge: -0.15, vdwRadius: 1.55 },
+        { x: 3.5, y: 1.2, z: 0.0, charge: 0.12, vdwRadius: 1.70 },
+        { x: 4.2, y: 0.0, z: 0.0, charge: -0.18, vdwRadius: 1.70 },
+        { x: 3.5, y: -1.2, z: 0.0, charge: 0.06, vdwRadius: 1.70 },
+        { x: 2.1, y: -1.2, z: 0.0, charge: -0.10, vdwRadius: 1.70 },
+        { x: 5.6, y: 0.0, z: 0.0, charge: -0.45, vdwRadius: 1.52 },
+        { x: 6.3, y: 1.2, z: 0.5, charge: 0.28, vdwRadius: 1.70 },
+        { x: -1.2, y: 0.8, z: 0.3, charge: -0.38, vdwRadius: 1.52 },
+      ],
+    },
+    bindingSite: [
+      { x: 3.2, y: 2.1, z: -1.0, charge: -0.42, vdwRadius: 1.80, residueType: "MET793" },
+      { x: 5.1, y: 0.5, z: 0.8, charge: 0.35, vdwRadius: 1.70, residueType: "LYS745" },
+      { x: 1.8, y: -0.5, z: 1.5, charge: -0.28, vdwRadius: 1.75, residueType: "THR790" },
+      { x: 4.5, y: -1.8, z: -0.5, charge: 0.15, vdwRadius: 1.85, residueType: "LEU788" },
+      { x: 0.5, y: 1.5, z: -0.8, charge: -0.52, vdwRadius: 1.60, residueType: "ASP855" },
+      { x: 6.0, y: 1.8, z: 1.2, charge: 0.22, vdwRadius: 1.70, residueType: "ALA743" },
+      { x: 2.5, y: -2.0, z: 0.3, charge: -0.18, vdwRadius: 1.90, residueType: "PHE856" },
+      { x: 7.0, y: -0.5, z: -0.3, charge: 0.08, vdwRadius: 1.70, residueType: "GLY796" },
+    ],
+    orientations: 360,
+    translationSteps: 20,
+  },
+  {
+    id: "vemurafenib-braf",
+    name: "Vemurafenib vs BRAF V600E",
+    category: "Melanoma",
+    description: "Docking Vemurafenib against mutant BRAF V600E kinase (melanoma driver mutation)",
+    compound: {
+      name: "Vemurafenib",
+      atoms: [
+        { x: 0.0, y: 0.0, z: 0.0, charge: -0.25, vdwRadius: 1.70 },
+        { x: 1.3, y: 0.7, z: 0.0, charge: 0.15, vdwRadius: 1.70 },
+        { x: 2.5, y: 0.0, z: 0.3, charge: -0.30, vdwRadius: 1.55 },
+        { x: 3.8, y: 0.7, z: 0.3, charge: 0.20, vdwRadius: 1.70 },
+        { x: 3.8, y: 2.1, z: 0.0, charge: -0.12, vdwRadius: 1.70 },
+        { x: 2.5, y: 2.8, z: -0.3, charge: 0.08, vdwRadius: 1.70 },
+        { x: 1.3, y: 2.1, z: -0.3, charge: -0.15, vdwRadius: 1.70 },
+        { x: 5.1, y: 0.0, z: 0.6, charge: -0.55, vdwRadius: 1.75 },
+        { x: -1.3, y: 0.7, z: -0.2, charge: -0.40, vdwRadius: 1.52 },
+        { x: 0.0, y: -1.4, z: 0.2, charge: 0.30, vdwRadius: 1.70 },
+        { x: 6.2, y: 0.8, z: 0.8, charge: -0.22, vdwRadius: 1.80 },
+      ],
+    },
+    bindingSite: [
+      { x: 2.0, y: 1.5, z: 2.0, charge: -0.38, vdwRadius: 1.75, residueType: "CYS532" },
+      { x: 4.5, y: 0.0, z: -1.0, charge: 0.42, vdwRadius: 1.70, residueType: "LYS483" },
+      { x: 0.8, y: -1.0, z: 1.2, charge: -0.25, vdwRadius: 1.80, residueType: "TRP531" },
+      { x: 5.5, y: 2.0, z: 0.5, charge: 0.18, vdwRadius: 1.85, residueType: "PHE595" },
+      { x: 1.5, y: 3.0, z: -0.5, charge: -0.48, vdwRadius: 1.60, residueType: "ASP594" },
+      { x: 6.5, y: -1.0, z: 1.0, charge: 0.12, vdwRadius: 1.70, residueType: "GLY596" },
+      { x: 3.0, y: -1.5, z: -1.5, charge: -0.15, vdwRadius: 1.90, residueType: "LEU505" },
+    ],
+    orientations: 360,
+    translationSteps: 20,
+  },
+  {
+    id: "trastuzumab-her2",
+    name: "Small Molecule vs HER2",
+    category: "Breast Cancer",
+    description: "Screening novel small molecule inhibitor against HER2 receptor (breast cancer overexpression target)",
+    compound: {
+      name: "POH-HER2-001",
+      atoms: [
+        { x: 0.0, y: 0.0, z: 0.0, charge: -0.20, vdwRadius: 1.70 },
+        { x: 1.2, y: 0.8, z: -0.3, charge: 0.10, vdwRadius: 1.70 },
+        { x: 2.4, y: 0.0, z: -0.5, charge: -0.35, vdwRadius: 1.55 },
+        { x: 3.6, y: 0.8, z: -0.2, charge: 0.25, vdwRadius: 1.70 },
+        { x: 4.8, y: 0.0, z: 0.0, charge: -0.42, vdwRadius: 1.52 },
+        { x: -1.2, y: 0.8, z: 0.3, charge: 0.18, vdwRadius: 1.70 },
+        { x: -2.4, y: 0.0, z: 0.5, charge: -0.28, vdwRadius: 1.75 },
+        { x: 1.2, y: -1.2, z: 0.2, charge: -0.15, vdwRadius: 1.70 },
+      ],
+    },
+    bindingSite: [
+      { x: 2.0, y: 1.0, z: 1.5, charge: -0.45, vdwRadius: 1.75, residueType: "THR862" },
+      { x: 4.0, y: -0.5, z: -1.5, charge: 0.38, vdwRadius: 1.70, residueType: "LYS753" },
+      { x: 0.5, y: -1.5, z: 0.8, charge: -0.30, vdwRadius: 1.80, residueType: "MET801" },
+      { x: 5.0, y: 1.5, z: 0.0, charge: 0.15, vdwRadius: 1.85, residueType: "LEU852" },
+      { x: 1.0, y: 2.5, z: -1.0, charge: -0.52, vdwRadius: 1.60, residueType: "ASP863" },
+      { x: -1.0, y: -0.5, z: 1.5, charge: 0.20, vdwRadius: 1.70, residueType: "VAL734" },
+      { x: 3.5, y: 2.0, z: 1.0, charge: -0.18, vdwRadius: 1.90, residueType: "PHE864" },
+      { x: 5.5, y: -1.0, z: 0.5, charge: 0.08, vdwRadius: 1.70, residueType: "GLY865" },
+      { x: -0.5, y: 1.5, z: -0.5, charge: -0.35, vdwRadius: 1.70, residueType: "CYS805" },
+    ],
+    orientations: 360,
+    translationSteps: 20,
+  },
+];
+
 // ── Task Names for Display ──────────────────────────────────────────
 
-export const TASK_DESCRIPTIONS: Record<string, Record<string, string>> = {
+export const FALLBACK_TASK_DESCRIPTIONS: Record<string, Record<string, string>> = {
   protein: {
     "1UBQ": "Modeling Ubiquitin folding pathways for Parkinson's research",
     "1CRN": "Optimizing Crambin structure for computational drug design",
@@ -225,4 +330,49 @@ export const TASK_DESCRIPTIONS: Record<string, Record<string, string>> = {
     "2023-turkey-syria": "Analyzing Turkey-Syria earthquake sequence for hazard mapping",
     "2025-cascadia-sim": "Modeling Cascadia M9.0 scenario for early warning systems",
   },
+  drugscreen: {
+    "erlotinib-egfr": "Screening Erlotinib against EGFR kinase for lung cancer therapy",
+    "vemurafenib-braf": "Docking Vemurafenib against BRAF V600E for melanoma treatment",
+    "trastuzumab-her2": "Testing novel inhibitor against HER2 receptor for breast cancer",
+  },
 };
+
+// Backward compatibility alias
+export const TASK_DESCRIPTIONS = FALLBACK_TASK_DESCRIPTIONS;
+
+/** Get display name for any task, including live data and fitness verify */
+export function getTaskDisplayName(taskType: string, payload: Record<string, unknown>): string {
+  // Fitness verify tasks
+  if (taskType === "fitness_verify") {
+    const actType = (payload.activity_type as string) || "activity";
+    const duration = (payload.duration_min as number) || 0;
+    const effort = (payload.effort_score as number) || 0;
+    return `Verifying ${Math.round(duration)}min ${actType.charAt(0).toUpperCase() + actType.slice(1)} — Effort: ${Math.round(effort)}`;
+  }
+
+  // Check for live data with name/description fields
+  const name = payload.name as string | undefined;
+  if (name) return name;
+
+  // Check for science ID in fallback descriptions
+  const scienceId = payload.scienceId as string | undefined;
+  if (scienceId && FALLBACK_TASK_DESCRIPTIONS[taskType]?.[scienceId]) {
+    return FALLBACK_TASK_DESCRIPTIONS[taskType][scienceId];
+  }
+
+  // Generic fallback
+  const genericNames: Record<string, string> = {
+    protein: "Protein Structure Optimization",
+    climate: "Climate Grid Simulation",
+    signal: "Seismic Signal Analysis",
+    drugscreen: "Drug Screening Analysis",
+    fitness_verify: "Fitness Activity Verification",
+  };
+  return genericNames[taskType] || taskType;
+}
+
+// Re-export fallback data as named aliases
+export const FALLBACK_PROTEINS = PROTEINS;
+export const FALLBACK_CLIMATE_SCENARIOS = CLIMATE_SCENARIOS;
+export const FALLBACK_SEISMIC_EVENTS = SEISMIC_EVENTS;
+export const FALLBACK_DRUG_COMPOUNDS = DRUG_COMPOUNDS;

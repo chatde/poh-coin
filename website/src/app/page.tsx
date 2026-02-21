@@ -1,5 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import Image from "next/image";
 import { VoyagerTracker } from "@/components/VoyagerTracker";
+import { FadeIn } from "@/components/motion/FadeIn";
+import {
+  StaggerParent,
+  StaggerChild,
+} from "@/components/motion/StaggerChildren";
 
 /* ---------- Reusable icon components ---------- */
 
@@ -75,14 +83,22 @@ function IconBarChart({ className }: { className?: string }) {
   );
 }
 
+function IconChevronDown({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
 /* ---------- Supply allocation data ---------- */
 
 const allocations = [
-  { label: "Community", pct: 50, color: "bg-accent-light" },
-  { label: "Charity", pct: 20, color: "bg-charity-green" },
-  { label: "Liquidity", pct: 15, color: "bg-voyager-gold" },
-  { label: "Founder", pct: 10, color: "bg-accent" },
-  { label: "Airdrop", pct: 5, color: "bg-foreground/40" },
+  { label: "Community", pct: 50, color: "bg-accent-light", gradient: "from-accent-light to-accent" },
+  { label: "Charity", pct: 20, color: "bg-charity-green", gradient: "from-charity-green to-emerald-600" },
+  { label: "Liquidity", pct: 15, color: "bg-voyager-gold", gradient: "from-voyager-gold to-amber-600" },
+  { label: "Founder", pct: 10, color: "bg-accent", gradient: "from-accent to-indigo-700" },
+  { label: "Airdrop", pct: 5, color: "bg-foreground/40", gradient: "from-foreground/40 to-foreground/20" },
 ];
 
 /* ---------- Trust signals ---------- */
@@ -91,12 +107,14 @@ const trustSignals = [
   {
     icon: IconCode,
     title: "Open Source",
-    description: "Fully verified on Basescan. Every line of smart contract code is publicly auditable.",
+    description: "All 5 contracts verified on Basescan. Slither + Mythril static analysis passed clean. Code on GitHub.",
+    href: "https://github.com/chatde/poh-coin",
   },
   {
     icon: IconLock,
     title: "Founder Vesting",
-    description: "4-year linear vesting with a 6-month cliff. Founder tokens are locked on-chain.",
+    description: "4-year linear vesting with a 6-month cliff. Founder tokens are locked on-chain — verifiable on Basescan.",
+    href: "https://sepolia.basescan.org/address/0x5112A61F036fE79C0D15a779269B6558dC70C1a7",
   },
   {
     icon: IconFlame,
@@ -107,6 +125,7 @@ const trustSignals = [
     icon: IconBarChart,
     title: "On-Chain Transparency",
     description: "Every charity dollar is tracked, verifiable, and publicly visible on the blockchain.",
+    href: "https://sepolia.basescan.org/address/0x31a3D6d28fEFfc177F9d099a4491A4E3cE8fA7E6",
   },
 ];
 
@@ -116,186 +135,232 @@ export default function Home() {
   return (
     <>
       {/* -------------------- HERO -------------------- */}
-      <section className="relative isolate overflow-hidden">
-        {/* Background glow effects */}
+      <section className="relative isolate flex min-h-screen items-center justify-center overflow-hidden">
+        {/* Hero background image */}
+        <Image
+          src="/images/hero-voyager-space.jpg"
+          alt=""
+          fill
+          priority
+          className="object-cover object-center -z-20"
+        />
+
+        {/* Dark gradient overlay */}
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/70 via-background/50 to-background" />
+
+        {/* Nebula glow blobs */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -top-40 left-1/2 -z-10 -translate-x-1/2"
         >
-          <div className="h-[600px] w-[900px] rounded-full bg-accent/15 blur-[128px]" />
+          <div className="h-[600px] w-[900px] rounded-full bg-accent/20 blur-[128px]" />
         </div>
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -bottom-24 right-0 -z-10"
         >
-          <div className="h-[400px] w-[500px] rounded-full bg-voyager-gold/10 blur-[100px]" />
+          <div className="h-[400px] w-[500px] rounded-full bg-voyager-gold/15 blur-[100px]" />
         </div>
 
         <div className="mx-auto max-w-7xl px-4 pb-24 pt-28 sm:px-6 sm:pt-36 lg:px-8 lg:pt-44">
-          <div className="flex flex-col items-center text-center">
-            {/* Tagline pill */}
-            <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-accent-light">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-charity-green animate-pulse" />
-              Charity-first crypto
-            </span>
-
-            <h1 className="max-w-4xl text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-              Change the Trajectory{" "}
-              <br className="hidden sm:block" />
-              <span className="bg-gradient-to-r from-accent-light via-voyager-gold to-charity-green bg-clip-text text-transparent">
-                of Humankind
+          <FadeIn>
+            <div className="flex flex-col items-center text-center">
+              {/* Tagline pill */}
+              <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-accent-light backdrop-blur-sm">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-charity-green animate-pulse" />
+                Charity-first crypto
               </span>
-            </h1>
 
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-foreground/60 sm:text-xl">
-              Every transaction funds environmental, humanitarian, educational,
-              and health causes&nbsp;&mdash; powered by Voyager&nbsp;1&rsquo;s
-              journey through interstellar space.
-            </p>
+              <h1 className="max-w-4xl text-5xl font-extrabold leading-[1.05] tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl">
+                Change the Trajectory{" "}
+                <br className="hidden sm:block" />
+                <span className="bg-gradient-to-r from-accent-light via-voyager-gold to-charity-green bg-clip-text text-transparent">
+                  of Humankind
+                </span>
+              </h1>
 
-            {/* CTAs */}
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-              <Link
-                href="/how-to-buy"
-                className="inline-flex h-12 items-center justify-center rounded-lg bg-accent px-8 text-sm font-semibold text-white shadow-lg shadow-accent/25 transition-all hover:bg-accent-light hover:shadow-accent/40"
-              >
-                Buy POH
-              </Link>
-              <Link
-                href="/whitepaper"
-                className="inline-flex h-12 items-center justify-center rounded-lg border border-foreground/20 px-8 text-sm font-semibold text-foreground transition-colors hover:border-accent-light hover:text-accent-light"
-              >
-                Read Whitepaper
-              </Link>
+              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-foreground/60 sm:text-xl">
+                Every transaction funds environmental, humanitarian, educational,
+                and health causes&nbsp;&mdash; powered by Voyager&nbsp;1&rsquo;s
+                journey through interstellar space.
+              </p>
+
+              {/* CTAs */}
+              <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+                <Link
+                  href="/how-to-buy"
+                  className="inline-flex h-14 items-center justify-center rounded-xl bg-gradient-to-r from-accent to-accent-light px-8 text-sm font-semibold text-white shadow-lg shadow-accent/25 transition-all hover:shadow-accent/40 hover:scale-105"
+                >
+                  Buy POH
+                </Link>
+                <Link
+                  href="/whitepaper"
+                  className="inline-flex h-14 items-center justify-center rounded-xl border border-foreground/20 bg-white/5 px-8 text-sm font-semibold text-foreground backdrop-blur-sm transition-all hover:border-accent-light hover:text-accent-light hover:bg-white/10"
+                >
+                  Read Whitepaper
+                </Link>
+              </div>
+
+              {/* Voyager Tracker */}
+              <div className="mt-16 w-full max-w-3xl">
+                <VoyagerTracker />
+              </div>
             </div>
+          </FadeIn>
+        </div>
 
-            {/* Voyager Tracker */}
-            <div className="mt-16 w-full max-w-3xl">
-              <VoyagerTracker />
-            </div>
-          </div>
+        {/* Scroll-down indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+          <IconChevronDown className="h-6 w-6 text-foreground/30" />
         </div>
       </section>
+
+      {/* ─── Gradient divider ─── */}
+      <div className="h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
 
       {/* -------------------- HOW IT WORKS -------------------- */}
-      <section className="border-t border-surface-light bg-surface/50 py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-accent-light">
-              How It Works
-            </h2>
-            <p className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Three steps. Real impact.
-            </p>
-          </div>
+      <section className="relative py-28 sm:py-32">
+        {/* Nebula glow */}
+        <div aria-hidden="true" className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 -z-10">
+          <div className="h-[500px] w-[500px] rounded-full bg-accent/8 blur-[120px]" />
+        </div>
 
-          <div className="mt-16 grid gap-8 md:grid-cols-3">
-            {/* Card 1 */}
-            <div className="group relative rounded-2xl border border-surface-light bg-surface p-8 transition-colors hover:border-accent/40">
-              <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 text-accent-light transition-colors group-hover:bg-accent/20">
-                <IconWallet className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-semibold">Buy or Earn POH</h3>
-              <p className="mt-3 text-sm leading-relaxed text-foreground/60">
-                Purchase on Uniswap or earn through Proof of Impact by
-                volunteering and donating.
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <FadeIn>
+            <div className="text-center">
+              <h2 className="text-sm font-semibold uppercase tracking-widest text-accent-light">
+                How It Works
+              </h2>
+              <p className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+                Three steps. Real impact.
               </p>
             </div>
+          </FadeIn>
+
+          <StaggerParent className="mt-16 grid gap-8 md:grid-cols-3">
+            {/* Card 1 */}
+            <StaggerChild>
+              <div className="glass-card glass-card-glow group relative p-8 transition-colors hover:border-accent/40">
+                <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 text-accent-light transition-colors group-hover:bg-accent/20">
+                  <IconWallet className="h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-semibold">Buy or Earn POH</h3>
+                <p className="mt-3 text-sm leading-relaxed text-foreground/60">
+                  Purchase on Uniswap or earn through Proof of Impact by
+                  volunteering and donating.
+                </p>
+              </div>
+            </StaggerChild>
 
             {/* Card 2 */}
-            <div className="group relative rounded-2xl border border-surface-light bg-surface p-8 transition-colors hover:border-charity-green/40">
-              <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-charity-green/10 text-charity-green transition-colors group-hover:bg-charity-green/20">
-                <IconHeart className="h-6 w-6" />
+            <StaggerChild>
+              <div className="glass-card glass-card-glow group relative p-8 transition-colors hover:border-charity-green/40">
+                <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-charity-green/10 text-charity-green transition-colors group-hover:bg-charity-green/20">
+                  <IconHeart className="h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-semibold">Automatic Charity Funding</h3>
+                <p className="mt-3 text-sm leading-relaxed text-foreground/60">
+                  Every transaction allocates fees to verified charitable causes.
+                  0.5&ndash;1.5% goes directly to the charity treasury.
+                </p>
               </div>
-              <h3 className="text-lg font-semibold">Automatic Charity Funding</h3>
-              <p className="mt-3 text-sm leading-relaxed text-foreground/60">
-                Every transaction allocates fees to verified charitable causes.
-                0.5&ndash;1.5% goes directly to the charity treasury.
-              </p>
-            </div>
+            </StaggerChild>
 
             {/* Card 3 */}
-            <div className="group relative rounded-2xl border border-surface-light bg-surface p-8 transition-colors hover:border-voyager-gold/40">
-              <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-voyager-gold/10 text-voyager-gold transition-colors group-hover:bg-voyager-gold/20">
-                <IconEye className="h-6 w-6" />
+            <StaggerChild>
+              <div className="glass-card glass-card-glow group relative p-8 transition-colors hover:border-voyager-gold/40">
+                <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-voyager-gold/10 text-voyager-gold transition-colors group-hover:bg-voyager-gold/20">
+                  <IconEye className="h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-semibold">Transparent Impact</h3>
+                <p className="mt-3 text-sm leading-relaxed text-foreground/60">
+                  All charity distributions are on-chain, publicly verifiable,
+                  and governed by the community.
+                </p>
               </div>
-              <h3 className="text-lg font-semibold">Transparent Impact</h3>
-              <p className="mt-3 text-sm leading-relaxed text-foreground/60">
-                All charity distributions are on-chain, publicly verifiable,
-                and governed by the community.
-              </p>
-            </div>
-          </div>
+            </StaggerChild>
+          </StaggerParent>
         </div>
       </section>
 
+      {/* ─── Gradient divider ─── */}
+      <div className="h-px bg-gradient-to-r from-transparent via-voyager-gold/30 to-transparent" />
+
       {/* -------------------- TOKENOMICS OVERVIEW -------------------- */}
-      <section className="border-t border-surface-light py-24">
+      <section className="relative py-28 sm:py-32">
+        {/* Nebula glow */}
+        <div aria-hidden="true" className="pointer-events-none absolute right-0 top-1/3 -z-10">
+          <div className="h-[400px] w-[400px] rounded-full bg-voyager-gold/8 blur-[120px]" />
+        </div>
+
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-voyager-gold">
-              Tokenomics
-            </h2>
-            <p className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Voyager Tokenomics
-            </p>
-            <p className="mx-auto mt-4 max-w-2xl text-foreground/60">
-              The total supply of POH is permanently tied to Voyager&nbsp;1&rsquo;s
-              distance from the Sun, measured in miles. As Voyager drifts deeper
-              into interstellar space, the max supply grows with it.
-            </p>
-          </div>
+          <FadeIn>
+            <div className="text-center">
+              <h2 className="text-sm font-semibold uppercase tracking-widest text-voyager-gold">
+                Tokenomics
+              </h2>
+              <p className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+                Voyager Tokenomics
+              </p>
+              <p className="mx-auto mt-4 max-w-2xl text-foreground/60">
+                The total supply of POH is permanently tied to Voyager&nbsp;1&rsquo;s
+                distance from the Sun, measured in miles. As Voyager drifts deeper
+                into interstellar space, the max supply grows with it.
+              </p>
+            </div>
+          </FadeIn>
 
           {/* Key stats */}
-          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StaggerParent className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { label: "Max Supply", value: "24.526B", sub: "tied to Voyager 1" },
               { label: "Buy Fee", value: "1%", sub: "charity allocation" },
               { label: "Sell Fee", value: "3%", sub: "charity + LP" },
               { label: "Transfer Fee", value: "0.5%", sub: "minimal friction" },
             ].map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-surface-light bg-surface p-6 text-center"
-              >
-                <p className="text-sm font-medium text-foreground/50">{stat.label}</p>
-                <p className="mt-2 text-3xl font-extrabold tracking-tight text-foreground">
-                  {stat.value}
-                </p>
-                <p className="mt-1 text-xs text-foreground/40">{stat.sub}</p>
-              </div>
+              <StaggerChild key={stat.label}>
+                <div className="glass-card p-6 text-center">
+                  <p className="text-sm font-medium text-foreground/50">{stat.label}</p>
+                  <p className="mt-2 text-3xl font-extrabold tracking-tight text-foreground">
+                    {stat.value}
+                  </p>
+                  <p className="mt-1 text-xs text-foreground/40">{stat.sub}</p>
+                </div>
+              </StaggerChild>
             ))}
-          </div>
+          </StaggerParent>
 
           {/* Allocation bar */}
-          <div className="mt-14">
-            <h3 className="mb-6 text-center text-lg font-semibold">
-              Supply Allocation
-            </h3>
+          <FadeIn delay={0.2}>
+            <div className="mt-14">
+              <h3 className="mb-6 text-center text-lg font-semibold">
+                Supply Allocation
+              </h3>
 
-            {/* Stacked bar */}
-            <div className="mx-auto flex h-6 max-w-3xl overflow-hidden rounded-full">
-              {allocations.map((a) => (
-                <div
-                  key={a.label}
-                  className={`${a.color} transition-all`}
-                  style={{ width: `${a.pct}%` }}
-                  title={`${a.label}: ${a.pct}%`}
-                />
-              ))}
-            </div>
+              {/* Stacked bar */}
+              <div className="mx-auto flex h-8 max-w-3xl overflow-hidden rounded-full shadow-inner shadow-black/30">
+                {allocations.map((a) => (
+                  <div
+                    key={a.label}
+                    className={`bg-gradient-to-r ${a.gradient} transition-all`}
+                    style={{ width: `${a.pct}%` }}
+                    title={`${a.label}: ${a.pct}%`}
+                  />
+                ))}
+              </div>
 
-            {/* Legend */}
-            <div className="mx-auto mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
-              {allocations.map((a) => (
-                <span key={a.label} className="inline-flex items-center gap-2 text-foreground/70">
-                  <span className={`inline-block h-3 w-3 rounded-sm ${a.color}`} />
-                  {a.label}&nbsp;
-                  <span className="font-semibold text-foreground">{a.pct}%</span>
-                </span>
-              ))}
+              {/* Legend */}
+              <div className="mx-auto mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+                {allocations.map((a) => (
+                  <span key={a.label} className="inline-flex items-center gap-2 text-foreground/70">
+                    <span className={`inline-block h-3 w-3 rounded-sm ${a.color}`} />
+                    {a.label}&nbsp;
+                    <span className="font-semibold text-foreground">{a.pct}%</span>
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          </FadeIn>
 
           <div className="mt-10 text-center">
             <Link
@@ -312,65 +377,98 @@ export default function Home() {
         </div>
       </section>
 
-      {/* -------------------- TRUST SECTION -------------------- */}
-      <section className="border-t border-surface-light bg-surface/50 py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-charity-green">
-              Security
-            </h2>
-            <p className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Built for Trust
-            </p>
-          </div>
+      {/* ─── Gradient divider ─── */}
+      <div className="h-px bg-gradient-to-r from-transparent via-charity-green/30 to-transparent" />
 
-          <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+      {/* -------------------- TRUST SECTION -------------------- */}
+      <section className="relative py-28 sm:py-32">
+        {/* Nebula glow */}
+        <div aria-hidden="true" className="pointer-events-none absolute left-1/3 bottom-0 -z-10">
+          <div className="h-[400px] w-[400px] rounded-full bg-charity-green/8 blur-[120px]" />
+        </div>
+
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <FadeIn>
+            <div className="text-center">
+              <h2 className="text-sm font-semibold uppercase tracking-widest text-charity-green">
+                Security
+              </h2>
+              <p className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+                Built for Trust
+              </p>
+            </div>
+          </FadeIn>
+
+          <StaggerParent className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {trustSignals.map((signal) => {
               const Icon = signal.icon;
               return (
-                <div
-                  key={signal.title}
-                  className="flex flex-col items-center rounded-2xl border border-surface-light bg-surface p-8 text-center transition-colors hover:border-charity-green/30"
-                >
-                  <div className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-full bg-charity-green/10 text-charity-green">
-                    <Icon className="h-6 w-6" />
+                <StaggerChild key={signal.title}>
+                  <div className="glass-card glass-card-glow flex flex-col items-center p-8 text-center transition-colors hover:border-charity-green/30">
+                    <div className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-full bg-charity-green/10 text-charity-green">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-base font-semibold">{signal.title}</h3>
+                    <p className="mt-3 text-sm leading-relaxed text-foreground/60">
+                      {signal.description}
+                    </p>
+                    {signal.href && (
+                      <a
+                        href={signal.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 text-xs font-medium text-accent-light hover:text-accent transition-colors"
+                      >
+                        Verify on-chain &rarr;
+                      </a>
+                    )}
                   </div>
-                  <h3 className="text-base font-semibold">{signal.title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-foreground/60">
-                    {signal.description}
-                  </p>
-                </div>
+                </StaggerChild>
               );
             })}
-          </div>
+          </StaggerParent>
         </div>
       </section>
 
+      {/* ─── Gradient divider ─── */}
+      <div className="h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
+
       {/* -------------------- BOTTOM CTA -------------------- */}
-      <section className="border-t border-surface-light py-24">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Ready to make an impact?
-          </h2>
-          <p className="mt-4 text-lg text-foreground/60">
-            Join the community building a future where every transaction
-            contributes to the pursuit of happiness for all.
-          </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link
-              href="/how-to-buy"
-              className="inline-flex h-12 items-center justify-center rounded-lg bg-accent px-8 text-sm font-semibold text-white shadow-lg shadow-accent/25 transition-all hover:bg-accent-light hover:shadow-accent/40"
-            >
-              Buy POH
-            </Link>
-            <Link
-              href="/impact"
-              className="inline-flex h-12 items-center justify-center rounded-lg border border-foreground/20 px-8 text-sm font-semibold text-foreground transition-colors hover:border-charity-green hover:text-charity-green"
-            >
-              View Impact Dashboard
-            </Link>
-          </div>
+      <section className="relative py-28 sm:py-32">
+        {/* Centered nebula glow */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center -z-10">
+          <div className="h-[400px] w-[600px] rounded-full bg-accent/10 blur-[120px]" />
         </div>
+
+        <FadeIn>
+          <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              Ready to{" "}
+              <span className="bg-gradient-to-r from-accent-light via-voyager-gold to-charity-green bg-clip-text text-transparent">
+                make an impact
+              </span>
+              ?
+            </h2>
+            <p className="mt-4 text-lg text-foreground/60">
+              Join the community building a future where every transaction
+              contributes to the pursuit of happiness for all.
+            </p>
+            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link
+                href="/how-to-buy"
+                className="inline-flex h-14 items-center justify-center rounded-xl bg-gradient-to-r from-accent to-accent-light px-8 text-sm font-semibold text-white shadow-lg shadow-accent/25 transition-all hover:shadow-accent/40 hover:scale-105"
+              >
+                Buy POH
+              </Link>
+              <Link
+                href="/impact"
+                className="inline-flex h-14 items-center justify-center rounded-xl border border-foreground/20 bg-white/5 px-8 text-sm font-semibold text-foreground backdrop-blur-sm transition-all hover:border-charity-green hover:text-charity-green hover:bg-white/10"
+              >
+                View Impact Dashboard
+              </Link>
+            </div>
+          </div>
+        </FadeIn>
       </section>
     </>
   );

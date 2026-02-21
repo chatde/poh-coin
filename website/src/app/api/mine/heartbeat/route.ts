@@ -4,7 +4,15 @@ import { THROTTLE_TEMP_C, STOP_TEMP_C } from "@/lib/constants";
 
 export async function POST(req: NextRequest) {
   try {
-    const { deviceId, challenge, response, batteryPct, temperatureC } = await req.json();
+    const {
+      deviceId,
+      challenge,
+      response,
+      batteryPct,
+      temperatureC,
+      memoryUsageMb,
+      workerActive,
+    } = await req.json();
 
     if (!deviceId) {
       return NextResponse.json({ error: "deviceId required" }, { status: 400 });
@@ -30,11 +38,11 @@ export async function POST(req: NextRequest) {
     // Verify challenge-response: find the pending challenge in DB
     const { data: pending } = await supabase
       .from("heartbeats")
-      .select("id, created_at")
+      .select("id, timestamp")
       .eq("device_id", deviceId)
       .eq("challenge", challenge)
       .eq("compute_status", "pending")
-      .order("created_at", { ascending: false })
+      .order("timestamp", { ascending: false })
       .limit(1)
       .single();
 
@@ -43,7 +51,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check expiry (60 seconds)
-    const createdAt = new Date(pending.created_at).getTime();
+    const createdAt = new Date(pending.timestamp).getTime();
     if (Date.now() - createdAt > 60_000) {
       // Clean up expired challenge
       await supabase.from("heartbeats").delete().eq("id", pending.id);
@@ -78,6 +86,8 @@ export async function POST(req: NextRequest) {
         battery_pct: batteryPct || null,
         temperature_c: temperatureC || null,
         compute_status: computeStatus,
+        memory_usage_mb: memoryUsageMb || null,
+        worker_active: workerActive ?? null,
       })
       .eq("id", pending.id);
 

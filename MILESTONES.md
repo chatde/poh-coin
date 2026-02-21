@@ -46,11 +46,11 @@
 
 ## Phase 5: Mainnet Launch
 - [ ] Buy ETH on Coinbase (~$100)
-- [ ] Deploy all 3 contracts to Base mainnet
+- [ ] Deploy all 7 contracts to Base mainnet (Token, Vesting, Charity, Rewards, Registry, Timelock, Governor)
 - [ ] Verify on Basescan
 - [ ] Create Uniswap V3 liquidity pool (POH/ETH)
 - [ ] Burn LP tokens (permanent liquidity lock)
-- [ ] Update website to mainnet
+- [ ] Update website env var: NEXT_PUBLIC_CHAIN_ID=8453
 - [ ] Announce launch
 
 ## Phase A: Proof of Planet — Smart Contracts
@@ -104,10 +104,45 @@
 - [x] Streak achievements (7d, 30d, 100d, 365d)
 - [x] Website builds clean: `next build` — 12 static pages + 16 API routes
 
-## Phase 6: Proof of Impact v1
+## Phase E: Mainnet Launch Preparation
+- [x] Add ERC20Votes + ERC20Permit to POHToken for governance support
+- [x] All 140 existing tests still pass with ERC20Votes changes
+- [x] Create `scripts/deploy-mainnet.js` — deploys all 7 contracts (5 original + TimelockController + POHGovernor)
+- [x] Create `scripts/create-lp.js` — Uniswap V3 POH/ETH LP creation with configurable fee tier
+- [x] Create `DEPLOYMENT_CHECKLIST.md` — 16-step deployment guide with emergency procedures
+- [x] Add mainnet/testnet toggle to `website/src/lib/contracts.ts` — NEXT_PUBLIC_CHAIN_ID env var
+
+## Phase F: DAO Governance — Token-Weighted Voting
+- [x] Write `contracts/POHGovernor.sol` — OpenZeppelin Governor v5 with all extensions
+- [x] Governor config: 7200 block voting delay (~1 day), 50400 block voting period (~7 days), 0.1% proposal threshold, 4% quorum
+- [x] TimelockController: 48hr execution delay, Governor as proposer + executor
+- [x] Write `test/POHGovernor.test.js` — 26 tests covering full governance lifecycle
+- [x] All 166 tests passing (140 original + 26 governance)
+- [x] Governance page (`/governance`) — voting parameters, progressive decentralization roadmap
+- [x] Added `evmVersion: "cancun"` to hardhat.config.js for OZ v5.4.0 compatibility
+
+## Phase G: Proof of Impact v1 — Real Research Integration
+- [x] Add `drugscreen` compute task type — molecular docking scoring (van der Waals + electrostatic + desolvation)
+- [x] Add DRUG_COMPOUNDS dataset — 3 real drug candidates (Erlotinib/EGFR, Vemurafenib/BRAF, HER2 inhibitor)
+- [x] Create research partner API — `/api/research/submit` (task submission) + `/api/research/results` (results retrieval)
+- [x] API key authentication with SHA-256 hashing against research_partners table
+- [x] Research impact page (`/research`) — 4 research areas, partner CTA, network stats
+- [x] Added Governance + Research links to Navbar + Footer
+
+## Phase H: Proof of Impact v2 — AI-Verified Results
+- [x] Create `ai-verifier/` Python microservice (FastAPI + scikit-learn)
+- [x] Three-layer verification: statistical bounds (3σ), Isolation Forest ML, cross-device consistency
+- [x] Per-task-type structural validation (protein, climate, signal, drugscreen)
+- [x] Training pipeline: fetch from Supabase or generate synthetic data, train Isolation Forest (200 estimators, 5% contamination)
+- [x] Dockerfile for containerized deployment on Mac Mini
+- [x] Integrated AI verification into mining submit route with graceful fallback
+- [x] AI confidence + flags stored on task_assignments, rejected tasks marked as `ai_rejected`
+
+## Phase 6: Proof of Impact — Ongoing
 - [ ] Partner with verified charities
-- [ ] Implement partner-verified donation rewards
-- [ ] On-chain charity transaction tracking
+- [ ] Deploy AI verifier to Mac Mini
+- [ ] Run training pipeline on real mining data
+- [ ] Supabase migrations: add `source`/`partner_id` to compute_tasks, create research_partners table, add `ai_confidence`/`ai_flags` to task_assignments
 
 ## Phase 7: Legal & Compliance
 - [x] Add disclaimers to website — /disclaimers page with 10 legal sections
@@ -118,13 +153,18 @@
 
 ## Key Technical Decisions
 - **Network**: Base (Coinbase L2) — cheapest deployment, best on-ramp
-- **Solidity**: 0.8.24, OpenZeppelin v5
-- **Token**: "Pursuit of Happiness" / POH
+- **Solidity**: 0.8.24, OpenZeppelin v5.4.0, EVM version Cancun
+- **Token**: "Pursuit of Happiness" / POH — ERC20 + ERC20Votes + ERC20Permit
 - **Supply**: 24,526,000,000 (Voyager 1 distance model)
 - **Fees**: 1% buy / 3% sell / 0.5% transfer
 - **Anti-whale**: 2% max wallet, 1% max tx
 - **Vesting**: 10% founder, 4yr linear, 6mo cliff
 - **Founder must be max-wallet exempt** to receive vested tokens
+- **Governance**: OpenZeppelin Governor — 4% quorum, 7-day voting, 48hr timelock
+- **AI Verification**: Isolation Forest + statistical bounds + cross-device consistency
+- **Tests**: 166 passing (30 POHToken + 61 POHRewards + 48 POHNodeRegistry + 1 POHVesting + 26 POHGovernor)
+- **Compute tasks**: 4 types (protein folding, climate modeling, seismic analysis, drug screening)
+- **Website**: 14 static pages + 18 API routes, builds clean
 
 ## Contract Addresses — Base Sepolia Testnet
 - POHToken: `0xe75DC31C1D4F1f8b1160e84a6B3228115d1135a2`
@@ -134,7 +174,11 @@
 - POHNodeRegistry: `0x6413393Ec4c594F0a9ce9c1B5d2056B4B309E0e6`
 - Deployer: `0x4F5F81bb6B9BadADFb9ab8303530DF5BCdd5368a`
 
-## Contract Addresses — Base Mainnet (fill after mainnet deploy)
+## Contract Addresses — Base Mainnet (fill after deploy-mainnet.js)
 - POHToken: `TBD`
 - POHVesting: `TBD`
 - POHCharity: `TBD`
+- POHRewards: `TBD`
+- POHNodeRegistry: `TBD`
+- TimelockController: `TBD`
+- POHGovernor: `TBD`

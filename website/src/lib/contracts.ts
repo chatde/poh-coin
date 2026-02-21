@@ -1,7 +1,10 @@
 import { ethers } from "ethers";
 
-// ── Base Sepolia Testnet Addresses ──────────────────────────────────
-export const CONTRACTS = {
+// ── Network Config ──────────────────────────────────────────────────
+const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || "84532");
+export const IS_MAINNET = CHAIN_ID === 8453;
+
+const SEPOLIA_CONTRACTS = {
   token: "0xe75DC31C1D4F1f8b1160e84a6B3228115d1135a2",
   charity: "0x31a3D6d28fEFfc177F9d099a4491A4E3cE8fA7E6",
   vesting: "0x5112A61F036fE79C0D15a779269B6558dC70C1a7",
@@ -9,6 +12,26 @@ export const CONTRACTS = {
   registry: "0x6413393Ec4c594F0a9ce9c1B5d2056B4B309E0e6",
 } as const;
 
+// Mainnet addresses — fill after deploy-mainnet.js
+const MAINNET_CONTRACTS = {
+  token: "TBD",
+  charity: "TBD",
+  vesting: "TBD",
+  rewards: "TBD",
+  registry: "TBD",
+} as const;
+
+export const CONTRACTS = IS_MAINNET ? MAINNET_CONTRACTS : SEPOLIA_CONTRACTS;
+
+export const RPC_URL = IS_MAINNET
+  ? "https://mainnet.base.org"
+  : "https://sepolia.base.org";
+export const BLOCK_EXPLORER = IS_MAINNET
+  ? "https://basescan.org"
+  : "https://sepolia.basescan.org";
+export const BASE_CHAIN_ID = CHAIN_ID;
+
+// Legacy exports for compatibility
 export const BASE_SEPOLIA_RPC = "https://sepolia.base.org";
 export const BASE_SEPOLIA_CHAIN_ID = 84532;
 
@@ -70,6 +93,7 @@ export const REGISTRY_ABI = [
   "function isActiveNode(bytes32) view returns (bool)",
   "function isStakedValidator(address) view returns (bool)",
   "function getOwnerDeviceCount(address) view returns (uint256)",
+  "function registerNode(bytes32 _deviceId, uint8 _tier) external",
 ];
 
 // ── Provider & Contract Instances ───────────────────────────────────
@@ -78,7 +102,7 @@ let _provider: ethers.JsonRpcProvider | null = null;
 
 export function getProvider(): ethers.JsonRpcProvider {
   if (!_provider) {
-    _provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC);
+    _provider = new ethers.JsonRpcProvider(RPC_URL);
   }
   return _provider;
 }
@@ -124,20 +148,20 @@ export async function connectWallet(): Promise<{ address: string; signer: ethers
   // Request account access
   await provider.send("eth_requestAccounts", []);
 
-  // Switch to Base Sepolia if needed
+  // Switch to correct chain
   try {
     await provider.send("wallet_switchEthereumChain", [
-      { chainId: "0x" + BASE_SEPOLIA_CHAIN_ID.toString(16) },
+      { chainId: "0x" + BASE_CHAIN_ID.toString(16) },
     ]);
   } catch (switchError: unknown) {
     // Chain not added — add it
     if ((switchError as { code: number }).code === 4902) {
       await provider.send("wallet_addEthereumChain", [{
-        chainId: "0x" + BASE_SEPOLIA_CHAIN_ID.toString(16),
-        chainName: "Base Sepolia",
+        chainId: "0x" + BASE_CHAIN_ID.toString(16),
+        chainName: IS_MAINNET ? "Base" : "Base Sepolia",
         nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
-        rpcUrls: [BASE_SEPOLIA_RPC],
-        blockExplorerUrls: ["https://sepolia.basescan.org"],
+        rpcUrls: [RPC_URL],
+        blockExplorerUrls: [BLOCK_EXPLORER],
       }]);
     }
   }

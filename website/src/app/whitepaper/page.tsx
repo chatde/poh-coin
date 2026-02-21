@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FadeIn } from "@/components/motion/FadeIn";
 
 export const metadata: Metadata = {
   title: "Whitepaper — Project POH",
@@ -11,12 +12,14 @@ export default function WhitepaperPage() {
     <div className="bg-background py-20 sm:py-28">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         {/* ── Header ── */}
-        <header className="mb-16 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-accent-light sm:text-5xl">
-            Project POH Whitepaper
-          </h1>
-          <p className="mt-4 text-lg text-foreground/50">Version 1.0</p>
-        </header>
+        <FadeIn>
+          <header className="mb-16 text-center">
+            <h1 className="text-4xl font-bold tracking-tight text-accent-light sm:text-5xl">
+              Project POH Whitepaper
+            </h1>
+            <p className="mt-4 text-lg text-foreground/50">Version 1.0</p>
+          </header>
+        </FadeIn>
 
         {/* ── Mission ── */}
         <Section id="mission" title="Mission">
@@ -205,13 +208,68 @@ export default function WhitepaperPage() {
             <li>
               All contract source code is{" "}
               <strong>open source and verified on Basescan</strong> so anyone can
-              audit the on-chain logic.
+              audit the on-chain logic.{" "}
+              <a
+                href="https://github.com/chatde/poh-coin"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent-light underline underline-offset-2 hover:text-accent"
+              >
+                View on GitHub
+              </a>
+              .
             </li>
             <li>
-              <strong>Slither static analysis passed</strong> &mdash; automated
-              vulnerability scanning confirms no high-severity findings.
+              <strong>Slither static analysis passed</strong> (by Trail of
+              Bits) &mdash; automated vulnerability scanning confirms no
+              critical or high-severity findings across all 5 contracts.
+            </li>
+            <li>
+              <strong>Mythril symbolic execution passed</strong> (by
+              ConsenSys) &mdash; zero issues detected. Checks for reentrancy,
+              integer overflow, access control, and more.
+            </li>
+            <li>
+              A <strong>third-party professional audit</strong> is planned
+              before mainnet launch.
             </li>
           </ul>
+        </Section>
+
+        {/* ── Governance ── */}
+        <Section id="governance" title="Charity Treasury Governance">
+          <p>
+            The 20% charity treasury (4.905B POH) is the backbone of the
+            project&rsquo;s mission. Governance of this treasury follows a
+            progressive decentralisation model:
+          </p>
+          <ul className="mt-6 list-disc space-y-3 pl-6 marker:text-accent-light">
+            <li>
+              <strong>Phase 1 &mdash; Founder-Governed (current):</strong>{" "}
+              The founder proposes charity distributions through the
+              POHCharity contract. Every proposal has a{" "}
+              <strong>24-hour timelock</strong> before execution, giving the
+              community time to review and object. All proposals and
+              executions are on-chain and publicly verifiable.
+            </li>
+            <li>
+              <strong>Phase 2 &mdash; Community Advisory:</strong> As the
+              community grows, a council of elected token holders will
+              review and approve proposals before the founder executes them.
+              Veto power transitions to the community.
+            </li>
+            <li>
+              <strong>Phase 3 &mdash; Full DAO:</strong> Governance
+              transitions to a token-weighted DAO where POH holders vote
+              directly on charity distributions, recipient selection, and
+              treasury strategy. The founder becomes one vote among many.
+            </li>
+          </ul>
+          <p className="mt-4">
+            This graduated approach ensures early operational agility while
+            building toward full community ownership &mdash; preventing both
+            premature DAO gridlock and unchecked centralisation.
+          </p>
         </Section>
 
         {/* ── Roadmap ── */}
@@ -249,7 +307,7 @@ export default function WhitepaperPage() {
 
         {/* ── Legal Disclaimer ── */}
         <Section id="disclaimer" title="Legal Disclaimer">
-          <div className="rounded-lg border border-surface-light bg-surface p-6 text-sm leading-relaxed text-foreground/60">
+          <div className="glass-card p-6 text-sm leading-relaxed text-foreground/60">
             POH is a utility token used to participate in charitable giving. It
             is not an investment, and no financial returns are promised. This is
             not financial advice. Consult a licensed attorney before making any
@@ -274,6 +332,7 @@ function Section({
 }) {
   return (
     <section id={id} className="mb-16">
+      <div className="mb-8 h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent" />
       <h2 className="mb-6 text-2xl font-bold text-accent-light sm:text-3xl">
         {title}
       </h2>

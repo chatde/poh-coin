@@ -1,13 +1,17 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { TASK_DESCRIPTIONS } from "@/lib/science-data";
+import { getTaskDisplayName } from "@/lib/science-data";
+import { createClient } from "@supabase/supabase-js";
 
 interface Task {
   task_id: string;
   task_type: string;
   payload: Record<string, unknown>;
   difficulty: number;
+  seed?: string;
+  task_version?: string;
+  source?: string;
 }
 
 interface ComputeState {
@@ -43,23 +47,13 @@ function persistState(state: { tasksCompleted: number; totalComputeMs: number })
   } catch {}
 }
 
-function getTaskDisplayName(task: Task): string {
-  const category = task.task_type;
-  const payload = task.payload;
+// Supabase Realtime client (anon key for subscriptions)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-  // Check if task has a science data ID we can look up
-  const scienceId = payload.scienceId as string | undefined;
-  if (scienceId && TASK_DESCRIPTIONS[category]?.[scienceId]) {
-    return TASK_DESCRIPTIONS[category][scienceId];
-  }
-
-  // Fallback to generic names
-  const genericNames: Record<string, string> = {
-    protein: "Protein Structure Optimization",
-    climate: "Climate Grid Simulation",
-    signal: "Seismic Signal Analysis",
-  };
-  return genericNames[category] || category;
+function getRealtimeClient() {
+  if (!supabaseUrl || !supabaseAnonKey) return null;
+  return createClient(supabaseUrl, supabaseAnonKey);
 }
 
 export function useCompute(deviceId: string | null) {
@@ -77,6 +71,7 @@ export function useCompute(deviceId: string | null) {
   const [isMining, setIsMining] = useState(false);
   const workerRef = useRef<Worker | null>(null);
   const isMiningRef = useRef(false);
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
 
   // Persist stats whenever they change
   useEffect(() => {
@@ -86,11 +81,46 @@ export function useCompute(deviceId: string | null) {
     });
   }, [state.tasksCompleted, state.totalComputeMs]);
 
+  // Setup Supabase Realtime subscription for task assignments
+  useEffect(() => {
+    if (!deviceId) return;
+
+    const supabase = getRealtimeClient();
+    if (!supabase) return;
+
+    const channel = supabase
+      .channel(`task-stream-${deviceId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "task_assignments",
+          filter: `device_id=eq.${deviceId}`,
+        },
+        (payload) => {
+          // New task assigned — if idle, trigger mining loop
+          if (!isMiningRef.current && payload.new) {
+            setState((s) => ({
+              ...s,
+              progressStep: "New task assigned via realtime...",
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [deviceId]);
+
   // Auto-resume mining if was mining before (page refresh)
   useEffect(() => {
     const wasMining = localStorage.getItem("poh-was-mining") === "true";
     if (wasMining && deviceId && !isMiningRef.current) {
-      // Small delay to let other hooks initialize
       const timer = setTimeout(() => {
         isMiningRef.current = true;
         setIsMining(true);
@@ -120,7 +150,7 @@ export function useCompute(deviceId: string | null) {
   }, [deviceId]);
 
   const submitResult = useCallback(
-    async (taskId: string, result: unknown, computeTimeMs: number) => {
+    async (taskId: string, result: unknown, computeTimeMs: number, proof: unknown) => {
       if (!deviceId) return;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10_000);
@@ -128,13 +158,12 @@ export function useCompute(deviceId: string | null) {
         await fetch("/api/mine/submit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ deviceId, taskId, result, computeTimeMs }),
+          body: JSON.stringify({ deviceId, taskId, result, computeTimeMs, proof }),
           signal: controller.signal,
         });
         clearTimeout(timeout);
       } catch {
         clearTimeout(timeout);
-        // Submission failed — will not block mining loop
       }
     },
     [deviceId]
@@ -165,7 +194,7 @@ export function useCompute(deviceId: string | null) {
       }
 
       // 2. Compute
-      const displayName = getTaskDisplayName(task);
+      const displayName = getTaskDisplayName(task.task_type, task.payload);
       setState((s) => ({
         ...s,
         status: "computing",
@@ -174,9 +203,12 @@ export function useCompute(deviceId: string | null) {
         progressStep: `Computing: ${displayName}`,
       }));
 
-      const result = await new Promise<{ result: unknown; computeTimeMs: number }>((resolve, reject) => {
+      const computeResult = await new Promise<{
+        result: unknown;
+        computeTimeMs: number;
+        proof: unknown;
+      }>((resolve, reject) => {
         let resolved = false;
-        // Timeout: if worker doesn't respond in 5 minutes, fail
         const workerTimeout = setTimeout(() => {
           if (!resolved) {
             resolved = true;
@@ -200,7 +232,11 @@ export function useCompute(deviceId: string | null) {
               resolved = true;
               clearTimeout(workerTimeout);
               worker.removeEventListener("message", handler);
-              resolve({ result: msg.result, computeTimeMs: msg.computeTimeMs });
+              resolve({
+                result: msg.result,
+                computeTimeMs: msg.computeTimeMs,
+                proof: msg.proof,
+              });
             }
           }
         };
@@ -210,13 +246,12 @@ export function useCompute(deviceId: string | null) {
           type: "run",
           taskId: task.task_id,
           taskType: task.task_type,
-          payload: task.payload,
+          payload: { ...task.payload, seed: task.seed },
         });
       }).catch(() => null);
 
-      if (!result || !isMiningRef.current) {
+      if (!computeResult || !isMiningRef.current) {
         if (!isMiningRef.current) break;
-        // Worker timed out — recreate worker and continue
         workerRef.current?.terminate();
         workerRef.current = new Worker(
           new URL("../workers/compute.worker.ts", import.meta.url)
@@ -226,7 +261,7 @@ export function useCompute(deviceId: string | null) {
         continue;
       }
 
-      // 3. Submit
+      // 3. Submit with proof
       setState((s) => ({
         ...s,
         status: "submitting",
@@ -234,12 +269,12 @@ export function useCompute(deviceId: string | null) {
         progressStep: "Submitting results for verification...",
       }));
 
-      await submitResult(task.task_id, result.result, result.computeTimeMs);
+      await submitResult(task.task_id, computeResult.result, computeResult.computeTimeMs, computeResult.proof);
 
       setState((s) => ({
         ...s,
         tasksCompleted: s.tasksCompleted + 1,
-        totalComputeMs: s.totalComputeMs + result.computeTimeMs,
+        totalComputeMs: s.totalComputeMs + computeResult.computeTimeMs,
         progressStep: "Verified! Requesting next task...",
       }));
 
@@ -279,7 +314,7 @@ export function useCompute(deviceId: string | null) {
   return {
     ...state,
     taskDisplayName: state.currentTask
-      ? getTaskDisplayName(state.currentTask)
+      ? getTaskDisplayName(state.currentTask.task_type, state.currentTask.payload)
       : null,
     isMining,
     startMining,

@@ -35,24 +35,48 @@ export function VoyagerTracker() {
   }, []);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl border border-surface-light bg-surface p-8 sm:p-12">
-      {/* Pulsing gold glow behind the number */}
+    <div className="glass-card relative w-full overflow-hidden p-8 sm:p-12">
+      {/* Orbit rings */}
       <div
         className="pointer-events-none absolute inset-0 flex items-center justify-center"
         aria-hidden="true"
       >
-        <div className="h-40 w-[80%] max-w-md animate-[pulse-slow_3s_ease-in-out_infinite] rounded-full bg-voyager-gold/10 blur-3xl" />
+        {/* Outer ring */}
+        <div
+          className="absolute h-[320px] w-[320px] rounded-full border border-voyager-gold/10 sm:h-[400px] sm:w-[400px]"
+          style={{ animation: "orbit-spin 60s linear infinite" }}
+        >
+          {/* Voyager marker dot */}
+          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 h-3 w-3 rounded-full bg-voyager-gold shadow-lg shadow-voyager-gold/50" />
+        </div>
+        {/* Inner ring */}
+        <div
+          className="absolute h-[220px] w-[220px] rounded-full border border-accent/10 sm:h-[280px] sm:w-[280px]"
+          style={{ animation: "orbit-spin 40s linear infinite reverse" }}
+        />
+      </div>
+
+      {/* Gold pulsing glow behind distance */}
+      <div
+        className="pointer-events-none absolute inset-0 flex items-center justify-center"
+        aria-hidden="true"
+      >
+        <div className="h-48 w-[80%] max-w-md animate-[pulse-slow_3s_ease-in-out_infinite] rounded-full bg-voyager-gold/10 blur-3xl" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center gap-6 text-center">
-        {/* Label */}
-        <p className="text-sm font-medium uppercase tracking-widest text-foreground/50">
-          Voyager 1 Distance from the Sun
-        </p>
+        {/* Label with flanking lines */}
+        <div className="flex items-center gap-4">
+          <div className="h-px w-12 bg-gradient-to-r from-transparent to-voyager-gold/30" />
+          <p className="text-sm font-medium uppercase tracking-widest text-foreground/50">
+            Voyager 1 Distance from the Sun
+          </p>
+          <div className="h-px w-12 bg-gradient-to-l from-transparent to-voyager-gold/30" />
+        </div>
 
         {/* Animated distance counter */}
         <p
-          className="font-mono text-4xl font-bold leading-tight text-voyager-gold sm:text-5xl md:text-6xl"
+          className="font-mono text-5xl font-bold leading-tight text-voyager-gold drop-shadow-[0_0_20px_rgba(245,158,11,0.3)] sm:text-6xl md:text-7xl"
           aria-live="polite"
         >
           {formatWithCommas(distance)}
@@ -61,8 +85,8 @@ export function VoyagerTracker() {
         {/* Unit */}
         <p className="text-lg font-medium text-foreground/60">km</p>
 
-        {/* Divider */}
-        <div className="h-px w-24 bg-surface-light" />
+        {/* Gradient divider */}
+        <div className="h-px w-32 bg-gradient-to-r from-transparent via-voyager-gold/40 to-transparent" />
 
         {/* Max supply callout */}
         <div className="flex flex-col items-center gap-1">

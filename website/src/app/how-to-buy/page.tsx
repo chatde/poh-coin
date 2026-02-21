@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FadeIn } from "@/components/motion/FadeIn";
 
 export const metadata: Metadata = {
   title: "How to Buy POH — Project POH",
@@ -248,18 +249,21 @@ export default function HowToBuyPage() {
   return (
     <div className="bg-background">
       {/* Header */}
-      <section className="relative overflow-hidden border-b border-surface-light">
+      <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--accent)_0%,_transparent_60%)] opacity-10" />
         <div className="relative mx-auto max-w-4xl px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            How to Buy{" "}
-            <span className="text-accent-light">POH</span>
-          </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-foreground/60">
-            A beginner-friendly guide to purchasing Pursuit of Happiness tokens
-            on the Base network.
-          </p>
+          <FadeIn>
+            <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              How to Buy{" "}
+              <span className="text-accent-light">POH</span>
+            </h1>
+            <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-foreground/60">
+              A beginner-friendly guide to purchasing Pursuit of Happiness tokens
+              on the Base network.
+            </p>
+          </FadeIn>
         </div>
+        <div className="h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
       </section>
 
       {/* Steps */}
@@ -273,20 +277,22 @@ export default function HowToBuyPage() {
 
           <div className="space-y-10">
             {steps.map((step) => (
-              <div key={step.number} className="relative flex gap-6">
-                {/* Step number circle */}
-                <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-accent bg-surface text-lg font-bold text-accent-light shadow-lg shadow-accent/10">
-                  {step.number}
-                </div>
+              <FadeIn key={step.number} delay={step.number * 0.05}>
+                <div className="relative flex gap-6">
+                  {/* Step number circle */}
+                  <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-accent bg-surface text-lg font-bold text-accent-light shadow-lg shadow-accent/10">
+                    {step.number}
+                  </div>
 
-                {/* Card */}
-                <div className="flex-1 rounded-xl border border-surface-light bg-surface p-6 shadow-lg shadow-black/20 sm:p-8">
-                  <h2 className="mb-4 text-xl font-semibold text-foreground">
-                    {step.title}
-                  </h2>
-                  {step.content}
+                  {/* Card */}
+                  <div className="glass-card flex-1 p-6 shadow-lg shadow-black/20 sm:p-8">
+                    <h2 className="mb-4 text-xl font-semibold text-foreground">
+                      {step.title}
+                    </h2>
+                    {step.content}
+                  </div>
                 </div>
-              </div>
+              </FadeIn>
             ))}
           </div>
         </div>
@@ -328,8 +334,11 @@ export default function HowToBuyPage() {
         </div>
       </section>
 
+      {/* ─── Gradient divider ─── */}
+      <div className="h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
+
       {/* CTA */}
-      <section className="border-t border-surface-light bg-surface">
+      <section className="bg-gradient-to-b from-background to-surface">
         <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 sm:py-20 lg:px-8">
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
             Ready to make an impact?
@@ -340,7 +349,7 @@ export default function HowToBuyPage() {
           </p>
           <a
             href="#"
-            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-accent px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-accent/20 transition-all hover:bg-accent-light hover:shadow-accent-light/20"
+            className="mt-8 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-accent to-accent-light px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-accent/20 transition-all hover:shadow-accent-light/20 hover:scale-105"
           >
             Buy POH on Uniswap
             <svg

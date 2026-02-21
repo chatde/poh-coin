@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#00ff41",
+  themeColor: "#0a0a0a",
 };
 
 export const metadata: Metadata = {
@@ -27,6 +27,21 @@ export const metadata: Metadata = {
     description:
       "Change the trajectory of humankind. Every transaction funds real-world impact.",
     type: "website",
+    images: [
+      {
+        url: "/images/og-poh.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Project POH — Change the Trajectory of Humankind",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Project POH — Pursuit of Happiness Coin",
+    description:
+      "Change the trajectory of humankind. Every transaction funds real-world impact.",
+    images: ["/images/og-poh.jpg"],
   },
   icons: {
     icon: "/logo/poh-token-64x64.png",
@@ -51,7 +66,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
         <Navbar />
-        <main className="min-h-screen">{children}</main>
+        <main className="relative z-10 min-h-screen">{children}</main>
         <Footer />
       </body>
     </html>

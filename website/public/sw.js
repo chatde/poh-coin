@@ -1,7 +1,7 @@
 // Proof of Planet — Service Worker
-// Handles offline caching and background task management
+// Handles offline caching for the /mine PWA only
 
-const CACHE_NAME = "poh-mine-v1";
+const CACHE_NAME = "poh-mine-v2";
 const STATIC_ASSETS = [
   "/mine",
   "/mine/setup",
@@ -32,17 +32,24 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch: network-first with cache fallback
+// Fetch: only cache /mine routes and static assets — leave other pages alone
 self.addEventListener("fetch", (event) => {
-  // Don't cache API calls
-  if (event.request.url.includes("/api/")) {
+  const url = new URL(event.request.url);
+
+  // Only handle /mine pages and static assets (images, fonts, etc.)
+  const isMineRoute = url.pathname.startsWith("/mine");
+  const isStaticAsset = url.pathname.startsWith("/logo/") ||
+    url.pathname.startsWith("/images/") ||
+    url.pathname === "/manifest.json";
+
+  // Skip API calls and non-mine pages entirely
+  if (url.pathname.startsWith("/api/") || (!isMineRoute && !isStaticAsset)) {
     return;
   }
 
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Cache successful responses
         if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));

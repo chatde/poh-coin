@@ -60,6 +60,33 @@ export const ACHIEVEMENT_REP_BONUS = 5;    // +5 per achievement
 // Schools
 export const SCHOOL_DEVICE_CAP = 10;       // Schools can register up to 10 devices
 
+// ── Graduated Penalties ──────────────────────────────────────────────
+export const PENALTY_BASE = 2;             // 2^failureCount: 1, 2, 4, 8, 16...
+export const AUTO_DEACTIVATE_REPUTATION = 0; // Deactivate at reputation 0
+
+// ── Device Capability Tiers ──────────────────────────────────────────
+export const TIER_THRESHOLDS = {
+  TIER_3_CPU_MS: 200,
+  TIER_3_CORES: 8,
+  TIER_3_MEMORY_GB: 8,
+  TIER_2_CPU_MS: 500,
+  TIER_2_CORES: 4,
+  TIER_2_MEMORY_GB: 4,
+};
+
+// ── Fitness Mining Config ────────────────────────────────────────────
+export const FITNESS = {
+  HR_ZONE_FACTORS: [0, 0.5, 1.0, 1.5, 2.0, 2.5] as readonly number[],  // zones 0-5
+  CONSISTENCY_BONUS_PER_DAY: 0.05,  // +5% per consecutive day
+  CONSISTENCY_BONUS_CAP: 1.5,       // max 50% bonus (10 consecutive days)
+  MAX_ACTIVITIES_PER_DAY: 20,
+  MAX_EFFORT_PER_DAY: 500,          // cap to prevent gaming
+  MIN_DURATION_MINUTES: 5,          // ignore <5 min activities
+  POOL_SPLIT_BASE: 0.7,             // 70% compute, 30% fitness (adjusts dynamically)
+  POOL_SPLIT_MIN_COMPUTE: 0.5,      // Min 50% to compute pool
+  POOL_SPLIT_MAX_COMPUTE: 0.85,     // Max 85% to compute pool
+} as const;
+
 /**
  * Calculate the weekly pool for a given date
  */

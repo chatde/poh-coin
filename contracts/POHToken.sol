@@ -2,8 +2,11 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
+import "@openzeppelin/contracts/utils/Nonces.sol";
 
 /**
  * @title POHToken — Pursuit of Happiness Coin
@@ -19,7 +22,7 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
  *
  * Fee-exempt addresses: owner, this contract, charity treasury, vesting, LP pair, zero address.
  */
-contract POHToken is ERC20, Ownable, Pausable {
+contract POHToken is ERC20, ERC20Permit, ERC20Votes, Ownable, Pausable {
     // ── Supply ──────────────────────────────────────────────────────────
     uint256 public constant MAX_SUPPLY = 24_526_000_000 ether; // 24.526B with 18 decimals
 
@@ -66,7 +69,7 @@ contract POHToken is ERC20, Ownable, Pausable {
     constructor(
         address _charityWallet,
         address _liquidityWallet
-    ) ERC20("Pursuit of Happiness", "POH") Ownable(msg.sender) {
+    ) ERC20("Pursuit of Happiness", "POH") ERC20Permit("Pursuit of Happiness") Ownable(msg.sender) {
         require(_charityWallet != address(0), "POH: charity wallet is zero");
         require(_liquidityWallet != address(0), "POH: liquidity wallet is zero");
 
@@ -95,7 +98,7 @@ contract POHToken is ERC20, Ownable, Pausable {
         address from,
         address to,
         uint256 amount
-    ) internal override {
+    ) internal override(ERC20, ERC20Votes) {
         // Paused check (allow minting and burning even when paused)
         if (from != address(0) && to != address(0)) {
             _requireNotPaused();
@@ -215,6 +218,11 @@ contract POHToken is ERC20, Ownable, Pausable {
         maxWallet = _maxWallet;
         maxTx = _maxTx;
         emit AntiWhaleUpdated(_maxWallet, _maxTx);
+    }
+
+    // ── Required overrides (ERC20Permit + Nonces conflict) ──────────────
+    function nonces(address owner) public view override(ERC20Permit, Nonces) returns (uint256) {
+        return super.nonces(owner);
     }
 
     // ── View: total fees ────────────────────────────────────────────────
