@@ -18,15 +18,15 @@
 - [x] Write `test/POHToken.test.js` — 30 tests, all passing
 - [ ] Deploy to Base Sepolia testnet
 - [ ] Verify contracts on Basescan (Sepolia)
-- [ ] Run Slither static analysis
+- [x] Run Slither static analysis — no critical findings, fee vars made constant
 - [ ] Run Mythril formal verification
 
 ## Phase 2: Website MVP
-- [ ] Initialize Next.js 15 app in `website/`
-- [ ] Homepage with Voyager tracker + mission
-- [ ] Whitepaper page
-- [ ] Impact dashboard (on-chain treasury reads)
-- [ ] How to Buy page
+- [x] Initialize Next.js 15 app in `website/`
+- [x] Homepage with Voyager tracker + mission
+- [x] Whitepaper page
+- [x] Impact dashboard (on-chain treasury reads)
+- [x] How to Buy page
 - [ ] Deploy to Vercel
 - [ ] Point projectpoh.com DNS to Vercel
 
