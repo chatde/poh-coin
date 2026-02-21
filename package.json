@@ -1,0 +1,22 @@
+{
+  "name": "poh-coin",
+  "version": "1.0.0",
+  "description": "Project POH — Pursuit of Happiness Coin. A charity ERC20 token on Base with Voyager 1 tokenomics.",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:testnet": "hardhat run scripts/deploy.js --network baseSepolia",
+    "deploy:mainnet": "hardhat run scripts/deploy.js --network base",
+    "slither": "slither contracts/",
+    "clean": "hardhat clean"
+  },
+  "keywords": ["charity", "erc20", "base", "voyager", "poh"],
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.1.0"
+  }
+}
