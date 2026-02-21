@@ -1,0 +1,122 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+
+const navLinks = [
+  { href: "/", label: "Home" },
+  { href: "/whitepaper", label: "Whitepaper" },
+  { href: "/impact", label: "Impact" },
+  { href: "/how-to-buy", label: "How to Buy" },
+];
+
+export function Navbar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  return (
+    <nav className="sticky top-0 z-50 w-full border-b border-surface-light bg-background/80 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        {/* Brand */}
+        <Link href="/" className="flex items-center gap-2">
+          <span className="text-xl font-bold tracking-tight text-foreground">
+            Project&nbsp;
+            <span className="text-accent-light">POH</span>
+          </span>
+        </Link>
+
+        {/* Desktop links */}
+        <ul className="hidden items-center gap-8 md:flex">
+          {navLinks.map((link) => (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                className="text-sm font-medium text-foreground/70 transition-colors hover:text-accent-light"
+              >
+                {link.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        {/* Desktop CTA */}
+        <Link
+          href="/how-to-buy"
+          className="hidden rounded-lg bg-accent px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-light md:inline-block"
+        >
+          Buy POH
+        </Link>
+
+        {/* Mobile hamburger button */}
+        <button
+          type="button"
+          onClick={() => setMobileOpen((prev) => !prev)}
+          className="inline-flex items-center justify-center rounded-md p-2 text-foreground/70 hover:text-foreground md:hidden"
+          aria-label="Toggle navigation menu"
+          aria-expanded={mobileOpen}
+        >
+          {mobileOpen ? (
+            /* X icon */
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          ) : (
+            /* Hamburger icon */
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="border-t border-surface-light bg-background md:hidden">
+          <ul className="flex flex-col gap-1 px-4 py-4">
+            {navLinks.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="block rounded-md px-3 py-2 text-sm font-medium text-foreground/70 transition-colors hover:bg-surface hover:text-accent-light"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+            <li className="mt-2">
+              <Link
+                href="/how-to-buy"
+                onClick={() => setMobileOpen(false)}
+                className="block rounded-lg bg-accent px-3 py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-accent-light"
+              >
+                Buy POH
+              </Link>
+            </li>
+          </ul>
+        </div>
+      )}
+    </nav>
+  );
+}
