@@ -4,6 +4,7 @@ const footerLinks = [
   { href: "/whitepaper", label: "Whitepaper" },
   { href: "/impact", label: "Impact Dashboard" },
   { href: "/how-to-buy", label: "How to Buy" },
+  { href: "/disclaimers", label: "Disclaimers" },
 ];
 
 const socialLinks = [

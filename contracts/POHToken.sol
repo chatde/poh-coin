@@ -33,14 +33,14 @@ contract POHToken is ERC20, Ownable, Pausable {
 
     // ── Fee basis points (100 = 1%) ─────────────────────────────────────
     // Buy fees
-    uint256 public buyCharityFee   = 50;  // 0.5%
-    uint256 public buyLiquidityFee = 50;  // 0.5%
+    uint256 public constant buyCharityFee   = 50;  // 0.5%
+    uint256 public constant buyLiquidityFee = 50;  // 0.5%
     // Sell fees
-    uint256 public sellCharityFee   = 150; // 1.5%
-    uint256 public sellBurnFee      = 100; // 1.0%
-    uint256 public sellLiquidityFee = 50;  // 0.5%
+    uint256 public constant sellCharityFee   = 150; // 1.5%
+    uint256 public constant sellBurnFee      = 100; // 1.0%
+    uint256 public constant sellLiquidityFee = 50;  // 0.5%
     // Transfer fee
-    uint256 public transferCharityFee = 50; // 0.5%
+    uint256 public constant transferCharityFee = 50; // 0.5%
 
     uint256 private constant FEE_DENOMINATOR = 10_000;
 
