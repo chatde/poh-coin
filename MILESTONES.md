@@ -19,7 +19,7 @@
 - [ ] Deploy to Base Sepolia testnet
 - [ ] Verify contracts on Basescan (Sepolia)
 - [x] Run Slither static analysis — no critical findings, fee vars made constant
-- [ ] Run Mythril formal verification
+- [x] Run Mythril formal verification — no critical/medium findings, only expected timestamp usage (Low)
 
 ## Phase 2: Website MVP
 - [x] Initialize Next.js 15 app in `website/`
@@ -40,7 +40,7 @@
 - [ ] Set up Twitter/X
 - [ ] Set up Discord server
 - [ ] Set up Telegram
-- [ ] Public GitHub repo
+- [x] Public GitHub repo — https://github.com/chatde/poh-coin
 - [ ] Pre-launch content + announcement thread
 
 ## Phase 5: Mainnet Launch
@@ -58,7 +58,7 @@
 - [ ] On-chain charity transaction tracking
 
 ## Phase 7: Legal & Compliance
-- [ ] Add disclaimers to website
+- [x] Add disclaimers to website — /disclaimers page with 10 legal sections
 - [ ] Research California LLC vs. DAO LLC
 - [ ] Consult crypto attorney (when budget allows)
 
