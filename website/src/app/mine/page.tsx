@@ -65,6 +65,17 @@ export default function MinePage() {
     }
   }, []);
 
+  // Keep screen awake while mining (Wake Lock API)
+  useEffect(() => {
+    let wakeLock: WakeLockSentinel | null = null;
+    if (compute.isMining && "wakeLock" in navigator) {
+      navigator.wakeLock.request("screen").then((wl) => {
+        wakeLock = wl;
+      }).catch(() => {});
+    }
+    return () => { wakeLock?.release(); };
+  }, [compute.isMining]);
+
   const handleStartMining = useCallback(() => {
     if (battery.shouldStop) return;
     heartbeat.start();

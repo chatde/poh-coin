@@ -5,8 +5,8 @@ export const STARTING_ANNUAL_EMISSION = 536_000_000;
 export const RTG_DECAY_RATE = 0.95; // 5% annual decay
 export const WEEKS_PER_YEAR = 52;
 
-// Launch date — set this when the network goes live
-export const LAUNCH_DATE = new Date("2026-03-01T00:00:00Z");
+// Launch date — testnet launch
+export const LAUNCH_DATE = new Date("2026-02-21T00:00:00Z");
 
 // Pool split
 export const DATA_NODE_SHARE = 0.80; // 80% to data nodes

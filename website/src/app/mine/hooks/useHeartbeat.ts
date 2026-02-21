@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { createHash } from "crypto";
 
 interface HeartbeatState {
   connected: boolean;

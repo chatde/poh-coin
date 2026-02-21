@@ -259,11 +259,23 @@ function computeSignal(payload: Record<string, unknown>): unknown {
 }
 
 // ── Worker Message Handler ───────────────────────────────────────────
+let currentTaskId: string | null = null;
+
+// Intercept progress posts to inject taskId
+const originalPostMessage = self.postMessage.bind(self);
+self.postMessage = (msg: unknown) => {
+  if (msg && typeof msg === "object" && "type" in msg && (msg as ProgressMessage).type === "progress") {
+    (msg as ProgressMessage).taskId = currentTaskId!;
+  }
+  originalPostMessage(msg);
+};
+
 self.onmessage = (event: MessageEvent<TaskMessage>) => {
   const { type, taskId, taskType, payload } = event.data;
 
   if (type !== "run") return;
 
+  currentTaskId = taskId;
   const startTime = performance.now();
 
   let result: unknown;
@@ -283,7 +295,7 @@ self.onmessage = (event: MessageEvent<TaskMessage>) => {
 
   const computeTimeMs = Math.round(performance.now() - startTime);
 
-  self.postMessage({
+  originalPostMessage({
     type: "result",
     taskId,
     result,

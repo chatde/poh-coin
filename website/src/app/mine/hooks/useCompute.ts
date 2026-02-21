@@ -36,6 +36,7 @@ export function useCompute(deviceId: string | null) {
     error: null,
   });
 
+  const [isMining, setIsMining] = useState(false);
   const workerRef = useRef<Worker | null>(null);
   const isMiningRef = useRef(false);
 
@@ -150,12 +151,14 @@ export function useCompute(deviceId: string | null) {
   const startMining = useCallback(() => {
     if (isMiningRef.current) return;
     isMiningRef.current = true;
+    setIsMining(true);
     setState((s) => ({ ...s, status: "loading", error: null }));
     runMiningLoop();
   }, [runMiningLoop]);
 
   const stopMining = useCallback(() => {
     isMiningRef.current = false;
+    setIsMining(false);
     if (workerRef.current) {
       workerRef.current.terminate();
       workerRef.current = null;
@@ -176,7 +179,7 @@ export function useCompute(deviceId: string | null) {
     taskDisplayName: state.currentTask
       ? TASK_DISPLAY_NAMES[state.currentTask.task_type] || state.currentTask.task_type
       : null,
-    isMining: isMiningRef.current,
+    isMining,
     startMining,
     stopMining,
   };
