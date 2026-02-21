@@ -66,7 +66,7 @@
 - [x] **Updated tests: 140/140 passing** (30 POHToken + 61 POHRewards + 48 POHNodeRegistry + 1 POHVesting)
 - [x] **Deployed all 5 contracts to Base Sepolia** — token distribution verified (50/20/10/20 split)
 - [x] Run Slither on all contracts — no critical findings (naming convention, timestamp usage only)
-- [ ] Run Mythril on updated contracts
+- [x] Run Mythril on POHRewards + POHNodeRegistry — no issues detected
 - [x] **Verify all 5 contracts on Basescan (Sepolia)** — source code verified
 
 ## Phase B: Proof of Planet — Backend API + Backend
