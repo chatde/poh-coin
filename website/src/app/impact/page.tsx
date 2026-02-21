@@ -3,6 +3,16 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { VoyagerTracker } from "@/components/VoyagerTracker";
+import {
+  getTokenContract,
+  getCharityContract,
+  getVestingContract,
+  getRewardsContract,
+  getRegistryContract,
+  formatPOH,
+  CONTRACTS,
+} from "@/lib/contracts";
+import { ethers } from "ethers";
 
 const TOTAL_SUPPLY = 24_526_000_000;
 
@@ -56,6 +66,19 @@ interface NetworkStats {
 export default function ImpactPage() {
   const [stats, setStats] = useState<NetworkStats | null>(null);
 
+  const [onChain, setOnChain] = useState<{
+    charityBalance: string;
+    rewardsPool: string;
+    vestingReleased: string;
+    vestingReleasable: string;
+    vestedPct: number;
+    totalDistributedOnChain: string;
+    rewardsRemaining: string;
+    totalNodes: number;
+    totalValidators: number;
+    totalStaked: string;
+  } | null>(null);
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -70,6 +93,61 @@ export default function ImpactPage() {
 
     fetchStats();
     const interval = setInterval(fetchStats, 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch on-chain data from Base Sepolia
+  useEffect(() => {
+    const fetchOnChain = async () => {
+      try {
+        const token = getTokenContract();
+        const vesting = getVestingContract();
+        const rewards = getRewardsContract();
+        const registry = getRegistryContract();
+
+        const [
+          charityBal,
+          rewardsBal,
+          released,
+          releasable,
+          vestedPctBps,
+          totalDist,
+          remaining,
+          nodes,
+          validators,
+          staked,
+        ] = await Promise.all([
+          token.balanceOf(CONTRACTS.charity),
+          token.balanceOf(CONTRACTS.rewards),
+          vesting.released(),
+          vesting.releasable(),
+          vesting.vestedPercentageBps(),
+          rewards.totalDistributed(),
+          rewards.rewardsRemaining(),
+          registry.totalNodes(),
+          registry.totalValidators(),
+          registry.totalStaked(),
+        ]);
+
+        setOnChain({
+          charityBalance: formatPOH(charityBal, 1),
+          rewardsPool: formatPOH(rewardsBal, 1),
+          vestingReleased: formatPOH(released, 1),
+          vestingReleasable: formatPOH(releasable, 1),
+          vestedPct: Number(vestedPctBps) / 100,
+          totalDistributedOnChain: formatPOH(totalDist, 1),
+          rewardsRemaining: formatPOH(remaining, 1),
+          totalNodes: Number(nodes),
+          totalValidators: Number(validators),
+          totalStaked: formatPOH(staked, 1),
+        });
+      } catch {
+        // RPC error — use defaults
+      }
+    };
+
+    fetchOnChain();
+    const interval = setInterval(fetchOnChain, 60_000);
     return () => clearInterval(interval);
   }, []);
 
@@ -150,6 +228,59 @@ export default function ImpactPage() {
           </p>
         </div>
       </section>
+
+      {/* On-Chain Treasury Data */}
+      {onChain && (
+        <section className="mb-16">
+          <h2 className="mb-6 text-2xl font-bold tracking-tight text-foreground">
+            On-Chain Treasury
+            <span className="ml-2 text-xs font-normal text-foreground/40">Base Sepolia Testnet</span>
+          </h2>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-xl border border-surface-light bg-surface p-6">
+              <p className="text-sm font-medium text-foreground/50">Charity Treasury</p>
+              <p className="mt-2 text-2xl font-bold text-charity-green">
+                {onChain.charityBalance} POH
+              </p>
+              <a
+                href={`https://sepolia.basescan.org/address/${CONTRACTS.charity}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 text-xs text-foreground/30 hover:text-accent-light"
+              >
+                View on Basescan
+              </a>
+            </div>
+            <div className="rounded-xl border border-surface-light bg-surface p-6">
+              <p className="text-sm font-medium text-foreground/50">Rewards Pool</p>
+              <p className="mt-2 text-2xl font-bold text-accent-light">
+                {onChain.rewardsPool} POH
+              </p>
+              <p className="mt-1 text-xs text-foreground/40">
+                Remaining: {onChain.rewardsRemaining}
+              </p>
+            </div>
+            <div className="rounded-xl border border-surface-light bg-surface p-6">
+              <p className="text-sm font-medium text-foreground/50">Founder Vesting</p>
+              <p className="mt-2 text-2xl font-bold text-voyager-gold">
+                {onChain.vestedPct}% vested
+              </p>
+              <p className="mt-1 text-xs text-foreground/40">
+                Released: {onChain.vestingReleased} | Claimable: {onChain.vestingReleasable}
+              </p>
+            </div>
+            <div className="rounded-xl border border-surface-light bg-surface p-6">
+              <p className="text-sm font-medium text-foreground/50">On-Chain Nodes</p>
+              <p className="mt-2 text-2xl font-bold text-foreground">
+                {onChain.totalNodes}
+              </p>
+              <p className="mt-1 text-xs text-foreground/40">
+                Validators: {onChain.totalValidators} | Staked: {onChain.totalStaked}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Voyager Distance */}
       <section className="mb-16">
