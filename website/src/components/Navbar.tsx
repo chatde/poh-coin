@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const navLinks = [
   { href: "/", label: "Home" },
+  { href: "/mine", label: "Mine" },
   { href: "/whitepaper", label: "Whitepaper" },
   { href: "/impact", label: "Impact" },
+  { href: "/leaderboard", label: "Leaderboard" },
   { href: "/how-to-buy", label: "How to Buy" },
 ];
 
@@ -18,6 +21,13 @@ export function Navbar() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2">
+          <Image
+            src="/logo/poh-token-64x64.png"
+            alt="POH"
+            width={32}
+            height={32}
+            className="rounded-full"
+          />
           <span className="text-xl font-bold tracking-tight text-foreground">
             Project&nbsp;
             <span className="text-accent-light">POH</span>

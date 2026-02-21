@@ -10,13 +10,21 @@
     "slither": "slither contracts/",
     "clean": "hardhat clean"
   },
-  "keywords": ["charity", "erc20", "base", "voyager", "poh"],
+  "keywords": [
+    "charity",
+    "erc20",
+    "base",
+    "voyager",
+    "poh"
+  ],
   "license": "MIT",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "hardhat": "^2.22.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.1.0"
+    "@openzeppelin/contracts": "^5.1.0",
+    "@openzeppelin/merkle-tree": "^1.0.8",
+    "dotenv": "^17.3.1"
   }
 }

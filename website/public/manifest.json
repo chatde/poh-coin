@@ -1,0 +1,36 @@
+{
+  "name": "Proof of Planet — POH Mining",
+  "short_name": "POH Mine",
+  "description": "Mine POH tokens by contributing compute power to science. Proof of Planet by Pursuit of Happiness.",
+  "start_url": "/mine",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#00ff41",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/logo/poh-token-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo/poh-token-64x64.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo/poh-token-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo/poh-token-256x256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "lang": "en",
+  "dir": "ltr"
+}

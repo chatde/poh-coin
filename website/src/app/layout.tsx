@@ -24,6 +24,17 @@ export const metadata: Metadata = {
       "Change the trajectory of humankind. Every transaction funds real-world impact.",
     type: "website",
   },
+  icons: {
+    icon: "/logo/poh-token-64x64.png",
+    apple: "/logo/poh-token-256x256.png",
+  },
+  manifest: "/manifest.json",
+  themeColor: "#00ff41",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "POH Mine",
+  },
 };
 
 export default function RootLayout({
