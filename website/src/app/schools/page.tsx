@@ -1,14 +1,8 @@
 "use client";
 
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
-
 export default function SchoolsPage() {
   return (
-    <>
-      <Navbar />
-      <main className="min-h-screen bg-[var(--background)] pt-24 pb-16">
-        <div className="max-w-4xl mx-auto px-4">
+    <div className="max-w-4xl mx-auto px-4 py-20 sm:px-6">
           {/* Hero */}
           <div className="mb-12">
             <h1 className="text-4xl font-bold text-white mb-4">
@@ -141,9 +135,6 @@ export default function SchoolsPage() {
               Or reach out on Discord or Telegram for faster response.
             </p>
           </section>
-        </div>
-      </main>
-      <Footer />
-    </>
+    </div>
   );
 }

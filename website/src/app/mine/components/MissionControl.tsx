@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   TerminalStatus,
   TerminalProgress,
@@ -28,6 +28,17 @@ interface MissionControlProps {
   onStopMining: () => void;
 }
 
+function formatEpoch(epoch: number): string {
+  if (!epoch) return "—";
+  // Epoch is a week number. Show as "Week N" with date range
+  // Epochs start from launch date (Feb 21, 2026)
+  const launchDate = new Date("2026-02-21T00:00:00Z");
+  const weekStart = new Date(launchDate.getTime() + (epoch - 1) * 7 * 24 * 60 * 60 * 1000);
+  const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+  const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return `Week ${epoch} (${fmt(weekStart)} - ${fmt(weekEnd)})`;
+}
+
 export default function MissionControl({
   status,
   taskDisplayName,
@@ -48,6 +59,10 @@ export default function MissionControl({
 }: MissionControlProps) {
   const [log, setLog] = useState<string[]>([]);
   const [uptime, setUptime] = useState(0);
+  const [stats, setStats] = useState<{
+    verifiedTasks: number;
+    activeNodes: number;
+  } | null>(null);
 
   // Track uptime
   useEffect(() => {
@@ -65,6 +80,25 @@ export default function MissionControl({
       setLog((l) => [...l.slice(-99), `${new Date().toLocaleTimeString()} — ${progressStep}`]);
     }
   }, [progressStep]);
+
+  // Fetch global stats for the impact section
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch("/api/data/stats");
+        if (res.ok) {
+          const data = await res.json();
+          setStats({
+            verifiedTasks: data.verifiedTasks || 0,
+            activeNodes: data.activeNodes || 0,
+          });
+        }
+      } catch {}
+    };
+    fetchStats();
+    const interval = setInterval(fetchStats, 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -103,7 +137,7 @@ export default function MissionControl({
         />
         <TerminalStatus
           label="EPOCH"
-          value={epoch || "—"}
+          value={formatEpoch(epoch)}
         />
         <TerminalStatus
           label="UPTIME"
@@ -155,10 +189,54 @@ export default function MissionControl({
         {batteryLevel !== null && (
           <TerminalStatus
             label="BATTERY"
-            value={`${batteryLevel}%${charging ? " ⚡" : ""}`}
+            value={`${batteryLevel}%${charging ? " [CHARGING]" : ""}`}
             color={batteryLevel > 20 ? "green" : "red"}
           />
         )}
+      </div>
+
+      {/* Global Impact */}
+      <div className="border border-green-800 rounded p-3">
+        <div className="text-green-500 text-xs uppercase tracking-widest mb-2">
+          Global Impact
+        </div>
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-green-600 text-xs">YOUR CONTRIBUTION</span>
+            <span className="text-green-400 text-xs font-bold">{tasksCompleted} tasks verified</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-green-600 text-xs">NETWORK TASKS</span>
+            <span className="text-green-400 text-xs font-bold">
+              {(stats?.verifiedTasks || 0).toLocaleString()}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-green-600 text-xs">ACTIVE NODES</span>
+            <span className="text-green-400 text-xs font-bold">
+              {stats?.activeNodes || 1}
+            </span>
+          </div>
+
+          {/* Research categories */}
+          <div className="mt-3 border-t border-green-900 pt-2">
+            <div className="text-green-700 text-xs mb-1">Research Areas:</div>
+            <div className="space-y-1">
+              <div className="text-green-600 text-xs flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                Protein Folding — Parkinson's, Cancer, Drug Design
+              </div>
+              <div className="text-green-600 text-xs flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" />
+                Climate Modeling — Arctic Ice, Ocean Dynamics, Urban Heat
+              </div>
+              <div className="text-green-600 text-xs flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                Seismic Analysis — Earthquake Early Warning Systems
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Mining Control */}

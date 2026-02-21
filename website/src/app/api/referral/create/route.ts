@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
     const { error } = await supabase.from("referrals").insert({
       referrer_wallet: wallet,
-      invitee_wallet: "", // Placeholder until redeemed
+      invitee_wallet: null, // Set when redeemed
       referral_code: code,
       bonus_expires_at: expiresAt.toISOString(),
     });

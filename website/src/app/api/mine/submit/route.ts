@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Record the submission
-    await supabase
+    const { error: updateErr } = await supabase
       .from("task_assignments")
       .update({
         result,
@@ -37,6 +37,10 @@ export async function POST(req: NextRequest) {
         submitted_at: new Date().toISOString(),
       })
       .eq("id", assignment.id);
+
+    if (updateErr) {
+      return NextResponse.json({ error: updateErr.message }, { status: 500 });
+    }
 
     // Check if we have enough submissions for verification (2-of-3)
     const { data: allSubs } = await supabase
@@ -46,31 +50,36 @@ export async function POST(req: NextRequest) {
       .not("submitted_at", "is", null);
 
     if (allSubs && allSubs.length >= 2) {
-      // Compare results — simple JSON string comparison for now
+      // Compare results — group by JSON string
       const resultStrings = allSubs.map((s) => JSON.stringify(s.result));
-      const counts = new Map<string, string[]>();
+      const groups = new Map<string, string[]>();
 
       for (let i = 0; i < resultStrings.length; i++) {
         const key = resultStrings[i];
-        const existing = counts.get(key) || [];
+        const existing = groups.get(key) || [];
         existing.push(allSubs[i].device_id);
-        counts.set(key, existing);
+        groups.set(key, existing);
       }
 
-      // Find consensus (2+ matching results)
+      // Find consensus group (must have 2+ matching results)
       let consensusDevices: string[] = [];
       let outlierDevices: string[] = [];
 
-      for (const [, devices] of counts) {
-        if (devices.length >= 2) {
+      for (const [, devices] of groups) {
+        if (devices.length >= 2 && devices.length > consensusDevices.length) {
+          // If we had a previous consensus pick, those become outliers
+          if (consensusDevices.length > 0) {
+            outlierDevices.push(...consensusDevices);
+          }
           consensusDevices = devices;
-        } else {
+        } else if (devices.length < 2) {
           outlierDevices.push(...devices);
         }
       }
 
+      // Only proceed if we actually found a consensus (2+ matching)
       if (consensusDevices.length >= 2) {
-        // Mark matching submissions
+        // Mark matching/outlier submissions
         for (const sub of allSubs) {
           const isMatch = consensusDevices.includes(sub.device_id);
           await supabase
@@ -104,25 +113,37 @@ export async function POST(req: NextRequest) {
             });
           }
 
-          // Penalize outliers: reduce reputation by 1
-          for (const did of outlierDevices) {
-            const { data: node } = await supabase
-              .from("nodes")
-              .select("reputation")
-              .eq("device_id", did)
-              .single();
-
-            if (node) {
-              await supabase
+          // Only penalize outliers if consensus is clear (don't penalize if all 3 are different)
+          if (outlierDevices.length > 0 && consensusDevices.length >= 2) {
+            for (const did of outlierDevices) {
+              const { data: node } = await supabase
                 .from("nodes")
-                .update({ reputation: Math.max(0, node.reputation - 1) })
-                .eq("device_id", did);
+                .select("reputation")
+                .eq("device_id", did)
+                .single();
+
+              if (node) {
+                await supabase
+                  .from("nodes")
+                  .update({ reputation: Math.max(0, node.reputation - 1) })
+                  .eq("device_id", did);
+              }
+
+              // Still record proof (0 points, not verified) for tracking
+              await supabase.from("proofs").insert({
+                device_id: did,
+                epoch: epoch.epoch_number,
+                points_earned: 0,
+                tasks_completed: 1,
+                quality_verified: false,
+              });
             }
           }
         }
 
         return NextResponse.json({ verified: true, consensus: true });
       }
+      // No consensus yet (e.g., all 3 different) — don't penalize anyone, just wait
     }
 
     return NextResponse.json({ verified: false, message: "Awaiting more submissions" });

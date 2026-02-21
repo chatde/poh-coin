@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { generateChallenge, verifyChallenge } from "@/lib/crypto";
 import { THROTTLE_TEMP_C, STOP_TEMP_C } from "@/lib/constants";
-
-// In-memory challenge store (per-instance; fine for single-region deploy)
-// In production, store in Redis or Supabase
-const pendingChallenges = new Map<string, { challenge: string; expires: number }>();
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,27 +10,57 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "deviceId required" }, { status: 400 });
     }
 
-    // If no challenge provided, issue a new one
+    // If no challenge provided, issue a new one and store in DB
     if (!challenge) {
-      const newChallenge = generateChallenge();
-      pendingChallenges.set(deviceId, {
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      const newChallenge = Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("");
+
+      // Store challenge in heartbeats table as a pending challenge
+      await supabase.from("heartbeats").insert({
+        device_id: deviceId,
         challenge: newChallenge,
-        expires: Date.now() + 60_000, // 1 minute to respond
+        response: null,
+        compute_status: "pending",
       });
+
       return NextResponse.json({ challenge: newChallenge });
     }
 
-    // Verify challenge-response
-    const pending = pendingChallenges.get(deviceId);
-    if (!pending || pending.challenge !== challenge || Date.now() > pending.expires) {
+    // Verify challenge-response: find the pending challenge in DB
+    const { data: pending } = await supabase
+      .from("heartbeats")
+      .select("id, created_at")
+      .eq("device_id", deviceId)
+      .eq("challenge", challenge)
+      .eq("compute_status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!pending) {
       return NextResponse.json({ error: "Invalid or expired challenge" }, { status: 401 });
     }
 
-    if (!verifyChallenge(challenge, deviceId, response)) {
-      return NextResponse.json({ error: "Invalid response" }, { status: 401 });
+    // Check expiry (60 seconds)
+    const createdAt = new Date(pending.created_at).getTime();
+    if (Date.now() - createdAt > 60_000) {
+      // Clean up expired challenge
+      await supabase.from("heartbeats").delete().eq("id", pending.id);
+      return NextResponse.json({ error: "Challenge expired" }, { status: 401 });
     }
 
-    pendingChallenges.delete(deviceId);
+    // Verify response = SHA256(challenge + deviceId)
+    const encoder = new TextEncoder();
+    const data = encoder.encode(challenge + deviceId);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const expected = Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    if (expected !== response) {
+      return NextResponse.json({ error: "Invalid response" }, { status: 401 });
+    }
 
     // Determine compute status based on battery/temperature
     let computeStatus = "active";
@@ -45,24 +70,21 @@ export async function POST(req: NextRequest) {
       computeStatus = "throttled";
     }
 
-    // Record heartbeat
-    const { error: hbError } = await supabase.from("heartbeats").insert({
-      device_id: deviceId,
-      battery_pct: batteryPct || null,
-      temperature_c: temperatureC || null,
-      compute_status: computeStatus,
-      challenge,
-      response,
-    });
-
-    if (hbError) {
-      return NextResponse.json({ error: hbError.message }, { status: 500 });
-    }
+    // Update the pending heartbeat to mark it verified
+    await supabase
+      .from("heartbeats")
+      .update({
+        response,
+        battery_pct: batteryPct || null,
+        temperature_c: temperatureC || null,
+        compute_status: computeStatus,
+      })
+      .eq("id", pending.id);
 
     // Update node's last heartbeat
     await supabase
       .from("nodes")
-      .update({ last_heartbeat: new Date().toISOString() })
+      .update({ last_heartbeat: new Date().toISOString(), is_active: true })
       .eq("device_id", deviceId);
 
     return NextResponse.json({

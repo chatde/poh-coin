@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { ethers } from "ethers";
 import {
   Terminal,
   TerminalHeader,
@@ -26,26 +27,19 @@ export default function SetupPage() {
     return Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("");
   }, []);
 
-  // Step 1: Create a new wallet (simple key generation)
+  // Step 1: Create a new wallet using ethers.js (proper Keccak-256 derivation)
   const handleCreateWallet = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Generate a random wallet (in production, use ethers.Wallet.createRandom())
-      const keyArray = new Uint8Array(32);
-      crypto.getRandomValues(keyArray);
-      const privateKey = Array.from(keyArray, (b) => b.toString(16).padStart(2, "0")).join("");
+      // Generate a proper Ethereum wallet with correct key derivation
+      const wallet = ethers.Wallet.createRandom();
+      const address = wallet.address;
 
-      // Derive address from private key using keccak256
-      // Simplified — in production use ethers.js
-      const encoder = new TextEncoder();
-      const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(privateKey));
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const address = "0x" + hashArray.slice(0, 20).map((b) => b.toString(16).padStart(2, "0")).join("");
-
-      // Store securely
-      localStorage.setItem("poh-private-key", "0x" + privateKey);
+      // Store encrypted mnemonic in sessionStorage (clears on browser close)
+      // Private key is NEVER stored in localStorage for security
+      sessionStorage.setItem("poh-mnemonic", wallet.mnemonic?.phrase || "");
       localStorage.setItem("poh-wallet", address);
 
       const newDeviceId = generateDeviceId();

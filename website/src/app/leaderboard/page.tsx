@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 
 interface MinerEntry {
   wallet_address: string;
@@ -65,16 +63,13 @@ export default function LeaderboardPage() {
   ];
 
   return (
-    <>
-      <Navbar />
-      <main className="min-h-screen bg-[var(--background)] pt-24 pb-16">
-        <div className="max-w-4xl mx-auto px-4">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Leaderboard
-          </h1>
-          <p className="text-gray-400 mb-8">
-            Epoch {epoch} — Top miners, validators, and regions in the Proof of Planet network.
-          </p>
+    <div className="max-w-4xl mx-auto px-4 py-20 sm:px-6">
+      <h1 className="text-3xl font-bold text-foreground mb-2">
+        Leaderboard
+      </h1>
+      <p className="text-foreground/60 mb-8">
+        Epoch {epoch} — Top miners, validators, and regions in the Proof of Planet network.
+      </p>
 
           {/* Tab navigation */}
           <div className="flex gap-1 mb-6 border-b border-gray-800">
@@ -252,9 +247,6 @@ export default function LeaderboardPage() {
               )}
             </>
           )}
-        </div>
-      </main>
-      <Footer />
-    </>
+    </div>
   );
 }

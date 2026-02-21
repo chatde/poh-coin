@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { THROTTLE_TEMP_C, STOP_TEMP_C } from "@/lib/constants";
 
 interface BatteryState {
@@ -29,6 +29,9 @@ export function useBattery() {
     supported: false,
   });
 
+  const batteryRef = useRef<BatteryManager | null>(null);
+  const handlerRef = useRef<(() => void) | null>(null);
+
   const updateBattery = useCallback((battery: BatteryManager) => {
     const level = Math.round(battery.level * 100);
     const charging = battery.charging;
@@ -38,14 +41,13 @@ export function useBattery() {
       level,
       charging,
       supported: true,
-      // Only compute when charging (per design decision)
       shouldStop: s.temperature !== null ? s.temperature >= STOP_TEMP_C : !charging,
       shouldThrottle: s.temperature !== null ? s.temperature >= THROTTLE_TEMP_C : false,
     }));
   }, []);
 
   useEffect(() => {
-    let battery: BatteryManager | null = null;
+    let cancelled = false;
 
     const init = async () => {
       if (!("getBattery" in navigator)) {
@@ -54,23 +56,33 @@ export function useBattery() {
       }
 
       try {
-        battery = await (navigator as unknown as { getBattery(): Promise<BatteryManager> }).getBattery();
+        const battery = await (navigator as unknown as { getBattery(): Promise<BatteryManager> }).getBattery();
+        if (cancelled) return;
+
+        batteryRef.current = battery;
         updateBattery(battery);
 
-        const handler = () => updateBattery(battery!);
+        const handler = () => updateBattery(battery);
+        handlerRef.current = handler;
         battery.addEventListener("levelchange", handler);
         battery.addEventListener("chargingchange", handler);
-
-        return () => {
-          battery?.removeEventListener("levelchange", handler);
-          battery?.removeEventListener("chargingchange", handler);
-        };
       } catch {
-        setState((s) => ({ ...s, supported: false }));
+        if (!cancelled) {
+          setState((s) => ({ ...s, supported: false }));
+        }
       }
     };
 
     init();
+
+    return () => {
+      cancelled = true;
+      // Properly clean up battery event listeners
+      if (batteryRef.current && handlerRef.current) {
+        batteryRef.current.removeEventListener("levelchange", handlerRef.current);
+        batteryRef.current.removeEventListener("chargingchange", handlerRef.current);
+      }
+    };
   }, [updateBattery]);
 
   return state;
