@@ -27,8 +27,8 @@
 - [x] Whitepaper page
 - [x] Impact dashboard (on-chain treasury reads)
 - [x] How to Buy page
-- [ ] Deploy to Vercel
-- [ ] Point projectpoh.com DNS to Vercel
+- [x] Deploy to Vercel — https://website-theta-five-72.vercel.app
+- [ ] Point projectpoh.com DNS to Vercel — A record 76.76.21.21 + CNAME www → cname.vercel-dns.com (set in Namecheap)
 
 ## Phase 3: Testnet Integration
 - [ ] Connect website to testnet contracts
