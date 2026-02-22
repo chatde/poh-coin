@@ -233,6 +233,22 @@ CREATE INDEX idx_fitness_activities_wallet ON fitness_activities (wallet_address
 CREATE INDEX idx_fitness_activities_device ON fitness_activities (device_id);
 CREATE INDEX idx_fitness_activities_unverified ON fitness_activities (verified) WHERE verified = FALSE;
 
+-- ── Folding@Home Links ────────────────────────────────────────────
+-- Maps wallet addresses to F@H usernames for bonus mining points
+CREATE TABLE fah_links (
+  id                uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  wallet_address    text NOT NULL UNIQUE,
+  fah_username      text NOT NULL,
+  fah_score         bigint DEFAULT 0,
+  fah_wus           bigint DEFAULT 0,
+  last_synced_at    timestamptz,
+  verified          boolean DEFAULT false,
+  created_at        timestamptz DEFAULT now()
+);
+
+CREATE INDEX idx_fah_links_wallet ON fah_links (wallet_address);
+CREATE INDEX idx_fah_links_verified ON fah_links (verified) WHERE verified = TRUE;
+
 -- ── Device Fingerprints ─────────────────────────────────────────
 -- Canvas + WebGL + audio fingerprints for sybil resistance
 CREATE TABLE device_fingerprints (
@@ -352,6 +368,7 @@ ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE verification_failures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE device_benchmarks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quality_scores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fah_links ENABLE ROW LEVEL SECURITY;
 
 -- Service role (backend API) can do everything
 -- These policies allow the Supabase service_role key full access
@@ -381,3 +398,5 @@ CREATE POLICY "Service full access rate_limits" ON rate_limits FOR ALL TO servic
 CREATE POLICY "Service full access verification_failures" ON verification_failures FOR ALL TO service_role USING (true);
 CREATE POLICY "Service full access device_benchmarks" ON device_benchmarks FOR ALL TO service_role USING (true);
 CREATE POLICY "Service full access quality_scores" ON quality_scores FOR ALL TO service_role USING (true);
+CREATE POLICY "Public read fah_links" ON fah_links FOR SELECT USING (true);
+CREATE POLICY "Service full access fah_links" ON fah_links FOR ALL TO service_role USING (true);

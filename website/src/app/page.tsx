@@ -8,6 +8,7 @@ import {
   StaggerParent,
   StaggerChild,
 } from "@/components/motion/StaggerChildren";
+import { BLOCK_EXPLORER, CONTRACTS } from "@/lib/contracts";
 
 /* ---------- Reusable icon components ---------- */
 
@@ -114,7 +115,7 @@ const trustSignals = [
     icon: IconLock,
     title: "Founder Vesting",
     description: "4-year linear vesting with a 6-month cliff. Founder tokens are locked on-chain — verifiable on Basescan.",
-    href: "https://sepolia.basescan.org/address/0x5112A61F036fE79C0D15a779269B6558dC70C1a7",
+    href: `${BLOCK_EXPLORER}/address/${CONTRACTS.vesting}`,
   },
   {
     icon: IconFlame,
@@ -125,7 +126,7 @@ const trustSignals = [
     icon: IconBarChart,
     title: "On-Chain Transparency",
     description: "Every charity dollar is tracked, verifiable, and publicly visible on the blockchain.",
-    href: "https://sepolia.basescan.org/address/0x31a3D6d28fEFfc177F9d099a4491A4E3cE8fA7E6",
+    href: `${BLOCK_EXPLORER}/address/${CONTRACTS.charity}`,
   },
 ];
 

@@ -68,7 +68,7 @@ npx hardhat compile
 npx hardhat test
 ```
 
-- [ ] All 140 tests pass
+- [ ] All 166 tests pass
 
 ---
 

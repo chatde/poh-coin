@@ -150,6 +150,33 @@
 - [x] npm run build — clean, 166/166 tests passing
 - [x] New env vars: STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, FITBIT_CLIENT_ID, FITBIT_CLIENT_SECRET, OAUTH_STATE_SECRET
 
+## Phase J: Mainnet Launch
+- [x] **Part 1: Code changes (hardcoded testnet → dynamic)**
+  - [x] `website/src/app/security/page.tsx` — replaced hardcoded `BASESCAN` URL + contract addresses with `BLOCK_EXPLORER`, `CONTRACTS`, `IS_MAINNET` imports from `@/lib/contracts`; conditional "Basescan" vs "Base Sepolia Basescan" text
+  - [x] `website/src/app/page.tsx` — replaced hardcoded Sepolia Basescan URLs in `trustSignals` (vesting + charity links) with `${BLOCK_EXPLORER}/address/${CONTRACTS.vesting}` etc.
+  - [x] `website/src/app/impact/page.tsx` — added `BLOCK_EXPLORER` + `IS_MAINNET` imports; conditional "Base Mainnet" vs "Base Sepolia Testnet" badge; dynamic Basescan link for charity treasury
+  - [x] `DEPLOYMENT_CHECKLIST.md` — updated expected test count from 140 → 166
+  - [x] `npm run build` — clean compilation, zero errors (39 routes)
+  - [x] Grep confirmed zero remaining hardcoded `sepolia.basescan.org` references in website src (only the proper conditional fallback in `contracts.ts`)
+- [ ] **Part 2: Wallet & funding (manual)**
+  - [ ] Generate fresh deployer wallet via `npx hardhat console` → `ethers.Wallet.createRandom()`
+  - [ ] Fund deployer with ~$100-150 ETH on Base (Coinbase direct withdrawal)
+  - [ ] Set `DEPLOYER_PRIVATE_KEY`, `BASESCAN_API_KEY`, `CONFIRM_MAINNET=true` in `.env`
+- [ ] **Part 3: Deployment**
+  - [ ] `npx hardhat compile` + `npx hardhat test` (expect 166 passing)
+  - [ ] Dry run: `npx hardhat run scripts/deploy-mainnet.js` (local Hardhat, no ETH)
+  - [ ] Real deploy: `CONFIRM_MAINNET=true npx hardhat run scripts/deploy-mainnet.js --network base`
+  - [ ] Create Uniswap V3 LP: `CONFIRM_MAINNET=true npx hardhat run scripts/create-lp.js --network base`
+  - [ ] Mark AMM pair: `token.setAutomatedMarketMaker(POOL_ADDRESS, true)`
+- [ ] **Part 4: Website go-live**
+  - [ ] Fill `MAINNET_CONTRACTS` in `website/src/lib/contracts.ts` with deployed addresses
+  - [ ] Update Vercel env vars: `NEXT_PUBLIC_CHAIN_ID=8453` + contract addresses
+  - [ ] Trigger Vercel redeploy, verify mainnet data on all pages
+- [ ] **Part 5: Post-launch**
+  - [ ] Test swap fees on Uniswap (1% buy, 3% sell)
+  - [ ] Update MILESTONES.md with mainnet addresses
+  - [ ] Git commit + push
+
 ## Phase 6: Proof of Impact — Ongoing
 - [ ] Partner with verified charities
 - [ ] Deploy AI verifier to Mac Mini

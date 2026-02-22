@@ -6,6 +6,8 @@ import MissionControl from "./components/MissionControl";
 import NodeMap from "./components/NodeMap";
 import FitnessPanel from "./components/FitnessPanel";
 import FitnessLeaderboard from "./components/FitnessLeaderboard";
+import WalletManager from "./components/WalletManager";
+import FAHPanel from "./components/FAHPanel";
 import { useCompute } from "./hooks/useCompute";
 import { useHeartbeat } from "./hooks/useHeartbeat";
 import { useBattery } from "./hooks/useBattery";
@@ -19,7 +21,6 @@ export default function MinePage() {
   const [epoch, setEpoch] = useState(0);
   const [deviceCount, setDeviceCount] = useState(0);
   const [needsSetup, setNeedsSetup] = useState(false);
-  const [showWallet, setShowWallet] = useState(false);
   const [savingsWallet, setSavingsWallet] = useState<string | null>(null);
   const [miningView, setMiningView] = useState<"compute" | "fitness" | "both">("both");
 
@@ -143,6 +144,21 @@ export default function MinePage() {
         </div>
       )}
 
+      {/* Fitness + F@H connection prompts — visible at top on mobile */}
+      {!fitness.connected && (
+        <div className="border border-green-700 rounded p-3 mb-4 flex items-center justify-between gap-3">
+          <div className="text-green-600 text-xs">
+            Earn more POH — connect <span className="text-green-400">Strava</span> or <span className="text-green-400">Fitbit</span> to mine with your workouts
+          </div>
+          <button
+            onClick={handleConnectWearable}
+            className="shrink-0 border border-green-500 text-green-400 py-1.5 px-3 rounded font-mono text-xs hover:bg-green-900/30 transition-colors"
+          >
+            [ CONNECT ]
+          </button>
+        </div>
+      )}
+
       {/* View toggle */}
       <div className="flex gap-2 mb-4">
         {(["both", "compute", "fitness"] as const).map((view) => (
@@ -215,91 +231,17 @@ export default function MinePage() {
 
           <NodeMap deviceId={deviceId} walletAddress={walletAddress} />
 
+          {/* Folding@Home Panel */}
+          {walletAddress && <FAHPanel walletAddress={walletAddress} />}
+
           {/* Wallet Management */}
-          <div className="border border-green-800 rounded p-3">
-            <button
-              onClick={() => setShowWallet(!showWallet)}
-              className="w-full flex justify-between items-center text-green-500 text-xs uppercase tracking-widest"
-            >
-              <span>Wallet</span>
-              <span className="text-green-700">{showWallet ? "[-]" : "[+]"}</span>
-            </button>
-
-            {showWallet && (
-              <div className="mt-3 space-y-3">
-                {/* Mining Wallet */}
-                <div>
-                  <div className="text-green-700 text-xs mb-1">Mining Wallet (Hot)</div>
-                  <div className="bg-black border border-green-900 rounded p-2 font-mono text-xs text-green-400 break-all select-all">
-                    {walletAddress}
-                  </div>
-                  <div className="text-green-900 text-xs mt-1">
-                    This wallet signs mining transactions. Keep minimal funds here.
-                  </div>
-                </div>
-
-                {/* Savings Wallet */}
-                <div>
-                  <div className="text-green-700 text-xs mb-1">
-                    Savings Wallet (Cold){" "}
-                    {savingsWallet ? (
-                      <span className="text-green-500">SET</span>
-                    ) : (
-                      <span className="text-yellow-500">NOT SET</span>
-                    )}
-                  </div>
-                  {savingsWallet ? (
-                    <div className="bg-black border border-green-900 rounded p-2 font-mono text-xs text-green-400 break-all select-all">
-                      {savingsWallet}
-                    </div>
-                  ) : (
-                    <div className="text-yellow-600 text-xs">
-                      No savings wallet set. Rewards will be held in your mining wallet.
-                      Set one in{" "}
-                      <a href="/security" className="underline hover:text-green-400">
-                        Security Settings
-                      </a>.
-                    </div>
-                  )}
-                </div>
-
-                {/* Mnemonic Warning */}
-                {typeof sessionStorage !== "undefined" && sessionStorage.getItem("poh-mnemonic") && (
-                  <div className="border border-yellow-800 rounded p-2">
-                    <div className="text-yellow-500 text-xs font-bold mb-1">
-                      BACKUP YOUR RECOVERY PHRASE
-                    </div>
-                    <div className="text-yellow-700 text-xs">
-                      Your wallet was created on this device. If you clear browser data
-                      without backing up, you lose access to any tokens.
-                      Go to <a href="/security" className="underline hover:text-yellow-400">Security</a> to
-                      learn how to secure your wallet.
-                    </div>
-                  </div>
-                )}
-
-                {/* How rewards work */}
-                <div className="border-t border-green-900 pt-2">
-                  <div className="text-green-700 text-xs mb-1">How Rewards Work</div>
-                  <div className="text-green-800 text-xs space-y-1">
-                    <div>1. Mine (compute + fitness) and earn points each week</div>
-                    <div>2. Sunday: epoch closes, rewards calculated</div>
-                    <div>3. Monday: merkle root posted (24h timelock)</div>
-                    <div>4. Tuesday: claim your POH tokens</div>
-                    <div>5. Tokens go to savings wallet (if set)</div>
-                  </div>
-                </div>
-
-                {/* Points info */}
-                <div className="border-t border-green-900 pt-2">
-                  <div className="text-green-700 text-xs">
-                    Points this epoch: <span className="text-green-400">{points}</span>
-                    {" "}— POH rewards are calculated at epoch close based on your share of total network points.
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          {walletAddress && (
+            <WalletManager
+              walletAddress={walletAddress}
+              savingsWallet={savingsWallet}
+              points={points}
+            />
+          )}
 
           {/* Quick links */}
           <div className="border border-green-800 rounded p-3">

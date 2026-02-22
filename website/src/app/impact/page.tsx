@@ -15,6 +15,8 @@ import {
   getRegistryContract,
   formatPOH,
   CONTRACTS,
+  BLOCK_EXPLORER,
+  IS_MAINNET,
 } from "@/lib/contracts";
 
 const TOTAL_SUPPLY = 24_526_000_000;
@@ -99,7 +101,7 @@ export default function ImpactPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch on-chain data from Base Sepolia
+  // Fetch on-chain data
   useEffect(() => {
     const fetchOnChain = async () => {
       try {
@@ -247,7 +249,7 @@ export default function ImpactPage() {
         <section className="mb-16">
           <h2 className="mb-6 text-2xl font-bold tracking-tight text-foreground">
             On-Chain Treasury
-            <span className="ml-2 text-xs font-normal text-foreground/40">Base Sepolia Testnet</span>
+            <span className="ml-2 text-xs font-normal text-foreground/40">{IS_MAINNET ? "Base Mainnet" : "Base Sepolia Testnet"}</span>
           </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <div className="glass-card p-6">
@@ -256,7 +258,7 @@ export default function ImpactPage() {
                 {onChain.charityBalance} POH
               </p>
               <a
-                href={`https://sepolia.basescan.org/address/${CONTRACTS.charity}`}
+                href={`${BLOCK_EXPLORER}/address/${CONTRACTS.charity}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-1 text-xs text-foreground/30 hover:text-accent-light"

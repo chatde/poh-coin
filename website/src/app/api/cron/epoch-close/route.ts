@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { buildMerkleTree, toWei } from "@/lib/merkle";
+import { syncFahContributions, calculateFahBonus } from "@/lib/fah-data";
 import {
   calculateWeeklyPool,
   DATA_NODE_SHARE,
@@ -165,6 +166,28 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // 7b. Sync Folding@Home contributions and compute bonuses
+    const fahSync = await syncFahContributions();
+
+    // Build a map of F@H bonus points per wallet
+    const fahBonusMap = new Map<string, number>();
+    if (fahSync.synced > 0) {
+      const { data: fahLinks } = await supabase
+        .from("fah_links")
+        .select("wallet_address, fah_wus")
+        .eq("verified", true);
+
+      if (fahLinks) {
+        for (const link of fahLinks) {
+          // Calculate bonus from WUs completed (tracked via delta in syncFahContributions)
+          const bonus = calculateFahBonus(link.fah_wus || 0);
+          if (bonus > 0) {
+            fahBonusMap.set(link.wallet_address, bonus);
+          }
+        }
+      }
+    }
+
     // 8. Apply bonuses and compute final points per device
 
     // Group devices by wallet and H3 cell for geographic decay
@@ -249,6 +272,12 @@ export async function POST(req: NextRequest) {
       // H. Staked validator multiplier
       if (dp.tier === 2 && dp.isStaked) {
         points *= VALIDATOR_STAKED_MULTIPLIER;
+      }
+
+      // I. F@H bonus points
+      const fahBonus = fahBonusMap.get(dp.walletAddress) || 0;
+      if (fahBonus > 0) {
+        points += fahBonus;
       }
 
       adjustedPoints.set(dp.deviceId, points);

@@ -1,14 +1,14 @@
 "use client";
 
 import { FadeIn } from "@/components/motion/FadeIn";
+import { BLOCK_EXPLORER, CONTRACTS, IS_MAINNET } from "@/lib/contracts";
 
-const BASESCAN = "https://sepolia.basescan.org/address";
 const contracts = [
-  { name: "POHToken", address: "0xe75DC31C1D4F1f8b1160e84a6B3228115d1135a2" },
-  { name: "POHCharity", address: "0x31a3D6d28fEFfc177F9d099a4491A4E3cE8fA7E6" },
-  { name: "POHVesting", address: "0x5112A61F036fE79C0D15a779269B6558dC70C1a7" },
-  { name: "POHRewards", address: "0x136EB82Ce350a7f391DC02223a878A8FcA4028Fe" },
-  { name: "POHNodeRegistry", address: "0x6413393Ec4c594F0a9ce9c1B5d2056B4B309E0e6" },
+  { name: "POHToken", address: CONTRACTS.token },
+  { name: "POHCharity", address: CONTRACTS.charity },
+  { name: "POHVesting", address: CONTRACTS.vesting },
+  { name: "POHRewards", address: CONTRACTS.rewards },
+  { name: "POHNodeRegistry", address: CONTRACTS.registry },
 ];
 
 export default function SecurityPage() {
@@ -94,7 +94,7 @@ export default function SecurityPage() {
                   <td className="px-4 py-3 font-medium text-foreground">{c.name}</td>
                   <td className="px-4 py-3">
                     <a
-                      href={`${BASESCAN}/${c.address}`}
+                      href={`${BLOCK_EXPLORER}/address/${c.address}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-mono text-xs text-accent-light hover:text-accent underline underline-offset-2 break-all"
@@ -108,7 +108,7 @@ export default function SecurityPage() {
           </table>
         </div>
         <p className="mt-3 text-foreground/40 text-xs">
-          All contracts are verified on Base Sepolia Basescan. Click any address to view the full source code on-chain.
+          All contracts are verified on {IS_MAINNET ? "Basescan" : "Base Sepolia Basescan"}. Click any address to view the full source code on-chain.
         </p>
       </section>
 

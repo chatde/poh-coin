@@ -9,7 +9,7 @@ import {
   BlinkingCursor,
 } from "../components/Terminal";
 
-type Step = "wallet" | "permissions" | "wearable" | "benchmark" | "savings";
+type Step = "wallet" | "seed-phrase" | "permissions" | "wearable" | "fah" | "benchmark" | "savings";
 
 export default function SetupPage() {
   const [step, setStep] = useState<Step>("wallet");
@@ -26,6 +26,10 @@ export default function SetupPage() {
   const [benchmarking, setBenchmarking] = useState(false);
   // Store ethers wallet for signing
   const [ethersWallet, setEthersWallet] = useState<ethers.HDNodeWallet | null>(null);
+  // Seed phrase display
+  const [seedPhrase, setSeedPhrase] = useState<string | null>(null);
+  const [seedConfirmed, setSeedConfirmed] = useState(false);
+  const [seedCopied, setSeedCopied] = useState(false);
 
   // Handle OAuth redirect-back (after Strava/Fitbit authorization)
   useEffect(() => {
@@ -70,7 +74,7 @@ export default function SetupPage() {
     }
   }, []);
 
-  const totalSteps = 5;
+  const totalSteps = 7;
 
   // Generate a unique device ID
   const generateDeviceId = useCallback(() => {
@@ -140,8 +144,9 @@ export default function SetupPage() {
     try {
       const wallet = ethers.Wallet.createRandom();
       const address = wallet.address;
+      const mnemonic = wallet.mnemonic?.phrase || "";
 
-      sessionStorage.setItem("poh-mnemonic", wallet.mnemonic?.phrase || "");
+      localStorage.setItem("poh-mnemonic", mnemonic);
       localStorage.setItem("poh-wallet", address);
 
       const newDeviceId = generateDeviceId();
@@ -151,7 +156,8 @@ export default function SetupPage() {
       setDeviceId(newDeviceId);
       setWalletMethod("create");
       setEthersWallet(wallet);
-      setStep("permissions");
+      setSeedPhrase(mnemonic);
+      setStep("seed-phrase");
     } catch {
       setError("Failed to create wallet. Please try again.");
     } finally {
@@ -297,7 +303,7 @@ export default function SetupPage() {
   }, [walletAddress, deviceId]);
 
   const handleSkipWearable = useCallback(() => {
-    setStep("benchmark");
+    setStep("fah");
   }, []);
 
   // Step 4: Device benchmark
@@ -374,7 +380,7 @@ export default function SetupPage() {
     window.location.href = "/mine";
   }, [savingsWallet]);
 
-  const stepNumber = step === "wallet" ? 1 : step === "permissions" ? 2 : step === "wearable" ? 3 : step === "benchmark" ? 4 : 5;
+  const stepNumber = step === "wallet" ? 1 : step === "seed-phrase" ? 2 : step === "permissions" ? 3 : step === "wearable" ? 4 : step === "fah" ? 5 : step === "benchmark" ? 6 : 7;
 
   return (
     <Terminal>
@@ -383,7 +389,7 @@ export default function SetupPage() {
       <div className="max-w-lg mx-auto">
         {/* Progress */}
         <div className="flex gap-2 mb-6">
-          {[1, 2, 3, 4, 5].map((n) => (
+          {[1, 2, 3, 4, 5, 6, 7].map((n) => (
             <div
               key={n}
               className={`flex-1 h-1 rounded ${
@@ -443,7 +449,77 @@ export default function SetupPage() {
           </div>
         )}
 
-        {/* Step 2: Permissions + Signature + Fingerprint */}
+        {/* Step 2: Show Seed Phrase (only for created wallets) */}
+        {step === "seed-phrase" && seedPhrase && (
+          <div className="space-y-4">
+            <TerminalLine prefix="$">
+              WALLET CREATED: {walletAddress?.slice(0, 10)}...{walletAddress?.slice(-6)}
+            </TerminalLine>
+            <TerminalLine prefix="$">
+              SAVE YOUR RECOVERY PHRASE
+            </TerminalLine>
+
+            <div className="border border-yellow-800 rounded p-4 space-y-3">
+              <div className="text-yellow-400 text-sm mb-2">
+                Your 12-word recovery phrase is the ONLY way to recover your wallet.
+                Write it down and store it somewhere safe.
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 bg-black border border-green-900 rounded p-3">
+                {seedPhrase.split(" ").map((word, i) => (
+                  <div key={i} className="text-xs font-mono">
+                    <span className="text-green-900">{i + 1}.</span>{" "}
+                    <span className="text-green-400">{word}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(seedPhrase);
+                  setSeedCopied(true);
+                  setTimeout(() => setSeedCopied(false), 2000);
+                }}
+                className="w-full border border-green-700 text-green-400 py-2 px-3 rounded font-mono text-xs hover:bg-green-900/30 transition-colors"
+              >
+                {seedCopied ? "COPIED TO CLIPBOARD" : "[ COPY TO CLIPBOARD ]"}
+              </button>
+
+              <div className="border-t border-green-900 pt-3">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={seedConfirmed}
+                    onChange={(e) => setSeedConfirmed(e.target.checked)}
+                    className="mt-0.5 accent-green-500"
+                  />
+                  <span className="text-green-600 text-xs">
+                    I have saved my recovery phrase in a safe location.
+                    I understand that if I lose it, I cannot recover my wallet.
+                  </span>
+                </label>
+              </div>
+
+              <button
+                onClick={() => setStep("permissions")}
+                disabled={!seedConfirmed}
+                className={`w-full border py-3 px-4 rounded font-mono text-sm transition-colors ${
+                  seedConfirmed
+                    ? "border-green-500 text-green-400 hover:bg-green-900/30"
+                    : "border-green-900 text-green-900 cursor-not-allowed"
+                }`}
+              >
+                [ CONTINUE ]
+              </button>
+            </div>
+
+            <div className="text-yellow-900 text-xs">
+              Never share your recovery phrase. POH support will never ask for it.
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Permissions + Signature + Fingerprint */}
         {step === "permissions" && (
           <div className="space-y-4">
             <TerminalLine prefix="$">
@@ -563,7 +639,44 @@ export default function SetupPage() {
           </div>
         )}
 
-        {/* Step 4: Device Benchmark */}
+        {/* Step 5: Folding@Home (Optional) */}
+        {step === "fah" && (
+          <div className="space-y-4">
+            <TerminalLine prefix="$">
+              BOOST MINING WITH FOLDING@HOME (OPTIONAL)
+            </TerminalLine>
+
+            <div className="border border-green-800 rounded p-4 space-y-3">
+              <div className="text-green-400 text-sm mb-2">
+                Folding@Home — Real Science Bonus
+              </div>
+              <div className="text-green-700 text-xs mb-3">
+                Run the official Folding@Home client on your desktop to earn
+                bonus mining points. Your compute power helps researchers fold
+                proteins and discover new drugs.
+              </div>
+
+              <div className="text-green-600 text-xs space-y-1">
+                <div>1. Download F@H from foldingathome.org</div>
+                <div>2. Join the POH team in the F@H client</div>
+                <div>3. Link your F@H username in the mining dashboard</div>
+              </div>
+
+              <button
+                onClick={() => setStep("benchmark")}
+                className="w-full border border-green-500 text-green-400 py-3 px-4 rounded font-mono text-sm hover:bg-green-900/30 transition-colors mt-2"
+              >
+                [ CONTINUE ]
+              </button>
+            </div>
+
+            <div className="text-green-900 text-xs">
+              This is optional. You can set up Folding@Home later from the mining dashboard.
+            </div>
+          </div>
+        )}
+
+        {/* Step 6: Device Benchmark */}
         {step === "benchmark" && (
           <div className="space-y-4">
             <TerminalLine prefix="$">
@@ -643,6 +756,35 @@ export default function SetupPage() {
                 placeholder="0x... (Ledger / cold wallet address)"
                 className="w-full bg-black border border-green-800 text-green-400 py-2 px-3 rounded font-mono text-sm focus:border-green-500 focus:outline-none placeholder:text-green-900"
               />
+
+              {/* Fitness connection reminder if skipped */}
+              {!fitnessProvider && (
+                <div className="border border-green-700 rounded p-3 mt-2">
+                  <div className="text-green-600 text-xs mb-2">
+                    Earn more POH — connect <span className="text-green-400">Strava</span> or <span className="text-green-400">Fitbit</span> to
+                    mine with your workouts too
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleConnectProvider("strava")}
+                      disabled={loading}
+                      className="flex-1 border border-green-600 text-green-400 py-2 px-3 rounded font-mono text-xs hover:bg-green-900/30 transition-colors"
+                    >
+                      STRAVA
+                    </button>
+                    <button
+                      onClick={() => handleConnectProvider("fitbit")}
+                      disabled={loading}
+                      className="flex-1 border border-green-600 text-green-400 py-2 px-3 rounded font-mono text-xs hover:bg-green-900/30 transition-colors"
+                    >
+                      FITBIT
+                    </button>
+                  </div>
+                  <div className="text-green-900 text-xs mt-1">
+                    Or connect later from the mining dashboard.
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-3 mt-4">
                 <button
