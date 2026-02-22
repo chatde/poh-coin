@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ethers } from "ethers";
 import {
   Terminal,
@@ -26,6 +26,49 @@ export default function SetupPage() {
   const [benchmarking, setBenchmarking] = useState(false);
   // Store ethers wallet for signing
   const [ethersWallet, setEthersWallet] = useState<ethers.HDNodeWallet | null>(null);
+
+  // Handle OAuth redirect-back (after Strava/Fitbit authorization)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fitnessResult = params.get("fitness");
+    const providerParam = params.get("provider");
+    const stepParam = params.get("step");
+
+    // If redirected back from OAuth callback
+    if (fitnessResult === "success" && providerParam) {
+      // Restore wallet/device from localStorage
+      const storedWallet = localStorage.getItem("poh-wallet");
+      const storedDevice = localStorage.getItem("poh-device-id");
+      if (storedWallet) setWalletAddress(storedWallet);
+      if (storedDevice) setDeviceId(storedDevice);
+
+      setFitnessProvider(providerParam);
+      setStep("wearable");
+
+      // Clean URL
+      window.history.replaceState({}, "", "/mine/setup");
+    } else if (fitnessResult === "failed") {
+      const reason = params.get("reason") || "unknown";
+      const storedWallet = localStorage.getItem("poh-wallet");
+      const storedDevice = localStorage.getItem("poh-device-id");
+      if (storedWallet) setWalletAddress(storedWallet);
+      if (storedDevice) setDeviceId(storedDevice);
+
+      setError(`Wearable connection failed: ${reason}`);
+      setStep("wearable");
+
+      window.history.replaceState({}, "", "/mine/setup");
+    } else if (stepParam === "wearable") {
+      // Coming from mine page to connect wearable
+      const storedWallet = localStorage.getItem("poh-wallet");
+      const storedDevice = localStorage.getItem("poh-device-id");
+      if (storedWallet) setWalletAddress(storedWallet);
+      if (storedDevice) setDeviceId(storedDevice);
+
+      setStep("wearable");
+      window.history.replaceState({}, "", "/mine/setup");
+    }
+  }, []);
 
   const totalSteps = 5;
 
@@ -223,8 +266,8 @@ export default function SetupPage() {
     }
   }, [deviceId, walletAddress, generateFingerprint, ethersWallet, walletMethod]);
 
-  // Step 3: Connect wearable (optional)
-  const handleConnectWearable = useCallback(async () => {
+  // Step 3: Connect wearable via OAuth (Strava or Fitbit)
+  const handleConnectProvider = useCallback(async (provider: string) => {
     if (!walletAddress || !deviceId) return;
     setLoading(true);
     setError(null);
@@ -233,7 +276,7 @@ export default function SetupPage() {
       const res = await fetch("/api/mine/fitness/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress, deviceId }),
+        body: JSON.stringify({ walletAddress, deviceId, provider }),
       });
 
       if (!res.ok) {
@@ -243,32 +286,10 @@ export default function SetupPage() {
         return;
       }
 
-      const { widgetUrl } = await res.json();
+      const { authUrl } = await res.json();
 
-      // Open Terra widget in a popup
-      const popup = window.open(widgetUrl, "terra-connect", "width=500,height=700");
-
-      // Poll for popup close / connection success
-      const checkInterval = setInterval(async () => {
-        if (popup?.closed) {
-          clearInterval(checkInterval);
-          setLoading(false);
-
-          // Check if connection was stored
-          const checkRes = await fetch(`/api/mine/fitness/sync`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ walletAddress, deviceId }),
-          });
-
-          if (checkRes.ok) {
-            const data = await checkRes.json();
-            if (data.synced >= 0) {
-              setFitnessProvider("connected");
-            }
-          }
-        }
-      }, 1000);
+      // Full page redirect to OAuth provider
+      window.location.href = authUrl;
     } catch {
       setError("Failed to connect wearable.");
       setLoading(false);
@@ -488,7 +509,6 @@ export default function SetupPage() {
                 Earn POH by exercising — connect your wearable
               </div>
               <div className="text-green-700 text-xs mb-3">
-                Link Apple Health, Garmin, Strava, or Fitbit via Terra API.
                 Your workouts earn Effort Score points alongside compute mining.
                 Both paths share the same daily reward pool.
               </div>
@@ -500,13 +520,33 @@ export default function SetupPage() {
               ) : (
                 <div className="space-y-2">
                   <button
-                    onClick={handleConnectWearable}
+                    onClick={() => handleConnectProvider("strava")}
                     disabled={loading}
-                    className="w-full border border-green-600 text-green-400 py-3 px-4 rounded font-mono text-sm hover:bg-green-900/30 transition-colors"
+                    className="w-full border border-green-600 text-green-400 py-3 px-4 rounded font-mono text-sm hover:bg-green-900/30 transition-colors text-left"
                   >
-                    {loading ? "CONNECTING..." : "[ CONNECT WEARABLE ]"}
+                    <div className="font-bold">[1] STRAVA</div>
+                    <div className="text-green-700 text-xs mt-1">
+                      Best coverage: runs, rides, swims, yoga. Apple Health syncs here too.
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handleConnectProvider("fitbit")}
+                    disabled={loading}
+                    className="w-full border border-green-600 text-green-400 py-3 px-4 rounded font-mono text-sm hover:bg-green-900/30 transition-colors text-left"
+                  >
+                    <div className="font-bold">[2] FITBIT</div>
+                    <div className="text-green-700 text-xs mt-1">
+                      Fitbit wearables with heart rate tracking.
+                    </div>
                   </button>
                 </div>
+              )}
+
+              {loading && (
+                <TerminalLine prefix="...">
+                  Redirecting to provider <BlinkingCursor />
+                </TerminalLine>
               )}
 
               <button

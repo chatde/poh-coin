@@ -189,20 +189,24 @@ CREATE TABLE data_cache (
 CREATE INDEX idx_data_cache_expires ON data_cache (expires_at);
 
 -- ── Fitness Connections ─────────────────────────────────────────
--- Terra API wearable connections (Apple Health, Garmin, Strava, Fitbit)
+-- Direct OAuth connections to Strava and Fitbit
 CREATE TABLE fitness_connections (
-  id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  wallet_address  TEXT NOT NULL,
-  device_id       TEXT NOT NULL REFERENCES nodes(device_id),
-  terra_user_id   TEXT UNIQUE NOT NULL,
-  provider        TEXT NOT NULL,                   -- 'apple_health', 'garmin', 'strava', 'fitbit'
-  connected_at    TIMESTAMPTZ DEFAULT NOW(),
-  last_sync       TIMESTAMPTZ,
-  is_active       BOOLEAN DEFAULT TRUE
+  id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  wallet_address    TEXT NOT NULL,
+  device_id         TEXT NOT NULL REFERENCES nodes(device_id),
+  provider_user_id  TEXT UNIQUE NOT NULL,
+  provider          TEXT NOT NULL,                   -- 'strava', 'fitbit'
+  access_token      TEXT,
+  refresh_token     TEXT,
+  token_expires_at  TIMESTAMPTZ,
+  connected_at      TIMESTAMPTZ DEFAULT NOW(),
+  last_sync         TIMESTAMPTZ,
+  is_active         BOOLEAN DEFAULT TRUE
 );
 
 CREATE INDEX idx_fitness_conn_wallet ON fitness_connections (wallet_address);
 CREATE INDEX idx_fitness_conn_device ON fitness_connections (device_id);
+CREATE UNIQUE INDEX idx_fitness_conn_wallet_provider ON fitness_connections (wallet_address, provider) WHERE is_active = TRUE;
 
 -- ── Fitness Activities ──────────────────────────────────────────
 -- Individual workout/activity records from wearables

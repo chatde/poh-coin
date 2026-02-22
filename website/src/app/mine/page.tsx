@@ -103,24 +103,9 @@ export default function MinePage() {
     heartbeat.stop();
   }, [compute, heartbeat]);
 
-  const handleConnectWearable = useCallback(async () => {
-    if (!walletAddress || !deviceId) return;
-    try {
-      const res = await fetch("/api/mine/fitness/connect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress, deviceId }),
-      });
-      if (res.ok) {
-        const { widgetUrl } = await res.json();
-        if (widgetUrl) {
-          window.open(widgetUrl, "terra-connect", "width=500,height=700");
-        }
-      }
-    } catch {
-      // Will retry
-    }
-  }, [walletAddress, deviceId]);
+  const handleConnectWearable = useCallback(() => {
+    window.location.href = "/mine/setup?step=wearable";
+  }, []);
 
   // Redirect to setup if needed
   if (needsSetup) {

@@ -1,23 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { generateTerraWidgetSession, storeTerraConnection } from "@/lib/fitness-data";
+import { getProvider, createOAuthState } from "@/lib/fitness-data";
 
 /**
  * POST /api/mine/fitness/connect
  *
- * Two modes:
- *   1. { walletAddress, deviceId } → Generate Terra widget URL for OAuth
- *   2. { walletAddress, deviceId, terraUserId, provider } → Store connection after OAuth callback
+ * Accepts { walletAddress, deviceId, provider } and returns { authUrl }
+ * for the OAuth authorize redirect.
  */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { walletAddress, deviceId, terraUserId, provider } = body;
+    const { walletAddress, deviceId, provider } = body;
 
-    if (!walletAddress || !deviceId) {
+    if (!walletAddress || !deviceId || !provider) {
       return NextResponse.json(
-        { error: "walletAddress and deviceId are required" },
-        { status: 400 }
+        { error: "walletAddress, deviceId, and provider are required" },
+        { status: 400 },
       );
     }
 
@@ -36,28 +35,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Device does not belong to this wallet" }, { status: 403 });
     }
 
-    // Mode 2: Store connection after OAuth callback
-    if (terraUserId && provider) {
-      const success = await storeTerraConnection(walletAddress, deviceId, terraUserId, provider);
-      if (!success) {
-        return NextResponse.json({ error: "Failed to store connection" }, { status: 500 });
-      }
-      return NextResponse.json({ connected: true, provider });
-    }
-
-    // Mode 1: Generate Terra widget session
-    const session = await generateTerraWidgetSession(walletAddress.toLowerCase());
-    if (!session) {
+    // Validate provider
+    const fitnessProvider = getProvider(provider);
+    if (!fitnessProvider) {
       return NextResponse.json(
-        { error: "Failed to generate Terra widget session. Check TERRA_API_KEY config." },
-        { status: 503 }
+        { error: "Unsupported provider. Use 'strava' or 'fitbit'." },
+        { status: 400 },
       );
     }
 
-    return NextResponse.json({
-      widgetUrl: session.url,
-      sessionId: session.session_id,
-    });
+    // Create HMAC-signed state
+    const state = await createOAuthState(walletAddress, deviceId);
+
+    // Generate OAuth authorize URL
+    const authUrl = fitnessProvider.getAuthUrl(state);
+
+    return NextResponse.json({ authUrl });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

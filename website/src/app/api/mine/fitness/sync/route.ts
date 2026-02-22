@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { syncFitnessActivities } from "@/lib/fitness-data";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limiter";
+import type { FitnessConnection } from "@/lib/fitness-data";
 
 /**
  * POST /api/mine/fitness/sync
  *
- * Pull latest activities from Terra, compute effort scores, store in DB.
- * Rate limited: max 10 syncs/wallet/hour, max 20 activities/wallet/day.
+ * Pull latest activities from Strava/Fitbit, compute effort scores, store in DB.
+ * Rate limited: max 10 syncs/wallet/hour.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
     if (!walletAddress || !deviceId) {
       return NextResponse.json(
         { error: "walletAddress and deviceId are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -30,14 +31,14 @@ export async function POST(req: NextRequest) {
     if (!allowed) {
       return NextResponse.json(
         { error: "Too many sync requests. Max 10 per hour." },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
-    // Get active fitness connection for this wallet
+    // Get active fitness connection for this wallet (with tokens)
     const { data: connection } = await supabase
       .from("fitness_connections")
-      .select("terra_user_id, provider")
+      .select("id, wallet_address, device_id, provider_user_id, provider, access_token, refresh_token, token_expires_at, connected_at, last_sync, is_active")
       .eq("wallet_address", walletAddress.toLowerCase())
       .eq("device_id", deviceId)
       .eq("is_active", true)
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
     if (!connection) {
       return NextResponse.json(
         { error: "No active fitness connection found. Connect a wearable first." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -54,8 +55,7 @@ export async function POST(req: NextRequest) {
     const result = await syncFitnessActivities(
       walletAddress,
       deviceId,
-      connection.terra_user_id,
-      connection.provider,
+      connection as FitnessConnection,
     );
 
     // Get today's total effort score

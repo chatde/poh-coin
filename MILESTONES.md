@@ -138,6 +138,18 @@
 - [x] Integrated AI verification into mining submit route with graceful fallback
 - [x] AI confidence + flags stored on task_assignments, rejected tasks marked as `ai_rejected`
 
+## Phase I: Direct Fitness Integration (Terra → Strava + Fitbit)
+- [x] Replace Terra API with direct Strava + Fitbit OAuth 2.0 integration
+- [x] FitnessProvider interface with stravaProvider + fitbitProvider implementations
+- [x] HMAC-signed OAuth state with 10-minute expiry
+- [x] Token refresh — ensureValidToken() auto-refreshes expiring tokens
+- [x] OAuth callback route — exchanges code for tokens, stores connection, redirects
+- [x] Setup page — Strava/Fitbit provider selection buttons, OAuth redirect-back handling
+- [x] DB migration — terra_user_id → provider_user_id, add token columns
+- [x] schema.sql updated as source of truth
+- [x] npm run build — clean, 166/166 tests passing
+- [x] New env vars: STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, FITBIT_CLIENT_ID, FITBIT_CLIENT_SECRET, OAUTH_STATE_SECRET
+
 ## Phase 6: Proof of Impact — Ongoing
 - [ ] Partner with verified charities
 - [ ] Deploy AI verifier to Mac Mini
@@ -162,6 +174,7 @@
 - **Founder must be max-wallet exempt** to receive vested tokens
 - **Governance**: OpenZeppelin Governor — 4% quorum, 7-day voting, 48hr timelock
 - **AI Verification**: Isolation Forest + statistical bounds + cross-device consistency
+- **Fitness**: Direct Strava + Fitbit OAuth 2.0 (replaced Terra API)
 - **Tests**: 166 passing (30 POHToken + 61 POHRewards + 48 POHNodeRegistry + 1 POHVesting + 26 POHGovernor)
 - **Compute tasks**: 4 types (protein folding, climate modeling, seismic analysis, drug screening)
 - **Website**: 14 static pages + 18 API routes, builds clean

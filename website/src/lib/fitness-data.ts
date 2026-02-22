@@ -1,25 +1,33 @@
 /**
- * Fitness Data Pipeline — Terra API Integration
+ * Fitness Data Pipeline — Direct Strava + Fitbit Integration
  *
- * Connects wearables (Apple Health, Garmin, Strava, Fitbit) via Terra API.
+ * Connects wearables via OAuth 2.0 directly to Strava and Fitbit APIs.
  * Computes Effort Scores for fitness mining rewards.
  *
- * Terra API: 100K free credits/month (~500 active users)
+ * Strava: runs, rides, swims, yoga — Apple Health syncs via Strava app
+ * Fitbit: Fitbit wearable users with heart rate tracking
  */
 
 import { supabase } from "@/lib/supabase";
 
-const TERRA_API_KEY = process.env.TERRA_API_KEY || "";
-const TERRA_DEV_ID = process.env.TERRA_DEV_ID || "";
-const TERRA_BASE_URL = "https://api.tryterra.co/v2";
+const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID || "";
+const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET || "";
+const FITBIT_CLIENT_ID = process.env.FITBIT_CLIENT_ID || "";
+const FITBIT_CLIENT_SECRET = process.env.FITBIT_CLIENT_SECRET || "";
+const OAUTH_STATE_SECRET = process.env.OAUTH_STATE_SECRET || "poh-oauth-state-secret";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "";
 
 // ── Types ────────────────────────────────────────────────────────────
 
 export interface FitnessConnection {
+  id: number;
   wallet_address: string;
   device_id: string;
-  terra_user_id: string;
+  provider_user_id: string;
   provider: string;
+  access_token: string | null;
+  refresh_token: string | null;
+  token_expires_at: string | null;
   connected_at: string;
   last_sync: string | null;
   is_active: boolean;
@@ -45,6 +53,35 @@ export interface EffortScoreBreakdown {
   hr_zone_factor: number;
   consistency_bonus: number;
   final_score: number;
+}
+
+interface OAuthTokens {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: Date;
+  providerUserId: string;
+}
+
+interface NormalizedActivity {
+  startTime: string;
+  type: string;
+  elapsedSeconds: number;
+  movingSeconds: number;
+  avgHeartRate: number | null;
+  calories: number | null;
+  distanceMeters: number | null;
+  rawPayload: unknown;
+}
+
+// ── Provider Interface ──────────────────────────────────────────────
+
+interface FitnessProvider {
+  name: string;
+  getAuthUrl(state: string): string;
+  exchangeCode(code: string): Promise<OAuthTokens | null>;
+  refreshAccessToken(refreshToken: string): Promise<OAuthTokens | null>;
+  fetchActivities(accessToken: string, since: Date): Promise<NormalizedActivity[]>;
+  revokeToken(accessToken: string): Promise<boolean>;
 }
 
 // ── HR Zone Factors ──────────────────────────────────────────────────
@@ -110,125 +147,9 @@ export async function computeActivityHash(
   return sha256(`${userId}:${activityStartTime}:${activityType}:${durationMin}`);
 }
 
-// ── Terra API Integration ────────────────────────────────────────────
-
-/** Generate Terra widget session for OAuth flow */
-export async function generateTerraWidgetSession(
-  referenceId: string,
-): Promise<{ url: string; session_id: string } | null> {
-  try {
-    const res = await fetch(`${TERRA_BASE_URL}/auth/generateWidgetSession`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": TERRA_API_KEY,
-        "dev-id": TERRA_DEV_ID,
-      },
-      body: JSON.stringify({
-        reference_id: referenceId,
-        providers: "APPLE,GARMIN,STRAVA,FITBIT",
-        language: "en",
-        auth_success_redirect_url: `${process.env.NEXT_PUBLIC_APP_URL || ""}/mine/setup?terra=success`,
-        auth_failure_redirect_url: `${process.env.NEXT_PUBLIC_APP_URL || ""}/mine/setup?terra=failed`,
-      }),
-      signal: AbortSignal.timeout(10_000),
-    });
-
-    if (!res.ok) return null;
-    const data = await res.json();
-    return {
-      url: data.url,
-      session_id: data.session_id,
-    };
-  } catch {
-    return null;
-  }
-}
-
-/** Store a Terra user connection after successful OAuth */
-export async function storeTerraConnection(
-  walletAddress: string,
-  deviceId: string,
-  terraUserId: string,
-  provider: string,
-): Promise<boolean> {
-  const { error } = await supabase.from("fitness_connections").upsert({
-    wallet_address: walletAddress.toLowerCase(),
-    device_id: deviceId,
-    terra_user_id: terraUserId,
-    provider: provider.toLowerCase(),
-    connected_at: new Date().toISOString(),
-    is_active: true,
-  }, { onConflict: "terra_user_id" });
-
-  return !error;
-}
-
-/** Deactivate a Terra connection */
-export async function disconnectTerra(
-  walletAddress: string,
-  terraUserId: string,
-): Promise<boolean> {
-  // Deauthenticate from Terra
-  try {
-    await fetch(`${TERRA_BASE_URL}/auth/deauthenticateUser`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": TERRA_API_KEY,
-        "dev-id": TERRA_DEV_ID,
-      },
-      body: JSON.stringify({ user_id: terraUserId }),
-      signal: AbortSignal.timeout(10_000),
-    });
-  } catch {
-    // Continue even if Terra API fails
-  }
-
-  const { error } = await supabase
-    .from("fitness_connections")
-    .update({ is_active: false })
-    .eq("wallet_address", walletAddress.toLowerCase())
-    .eq("terra_user_id", terraUserId);
-
-  return !error;
-}
-
-// ── Terra Activity Sync ──────────────────────────────────────────────
-
-interface TerraActivity {
-  metadata: {
-    start_time: string;
-    end_time: string;
-    type: number;
-    name?: string;
-  };
-  distance_data?: { distance_meters: number };
-  calories_data?: { total_burned_calories: number };
-  heart_rate_data?: {
-    summary: { avg_hr_bpm: number };
-    hr_samples?: Array<{ bpm: number; timestamp: string }>;
-  };
-  active_durations_data?: {
-    activity_seconds: number;
-  };
-  MET_data?: {
-    MET_samples: Array<{ level: number }>;
-  };
-}
-
-function mapTerraActivityType(typeNum: number): string {
-  const typeMap: Record<number, string> = {
-    0: "workout", 1: "run", 2: "cycle", 3: "swim", 4: "workout",
-    5: "walk", 6: "hike", 7: "cycle", 8: "workout", 9: "run",
-    10: "workout", 11: "yoga", 12: "workout",
-  };
-  return typeMap[typeNum] || "workout";
-}
+// ── HR Zone Estimation ───────────────────────────────────────────────
 
 function estimateHrZones(avgHr: number, durationMin: number): Record<string, number> {
-  // Estimate zone distribution based on average HR
-  // Assumes max HR ~190 for simplicity
   const maxHr = 190;
   const pctMax = avgHr / maxHr;
   const zones: Record<string, number> = { zone1: 0, zone2: 0, zone3: 0, zone4: 0, zone5: 0 };
@@ -252,7 +173,6 @@ function estimateHrZones(avgHr: number, durationMin: number): Record<string, num
     zones.zone5 = durationMin * 0.7;
   }
 
-  // Round all values
   for (const key of Object.keys(zones)) {
     zones[key] = Math.round(zones[key]);
   }
@@ -260,36 +180,464 @@ function estimateHrZones(avgHr: number, durationMin: number): Record<string, num
   return zones;
 }
 
-/** Sync activities from Terra for a user, compute effort scores, store in DB */
+// ── OAuth State (HMAC-signed) ────────────────────────────────────────
+
+export async function createOAuthState(walletAddress: string, deviceId: string): Promise<string> {
+  const payload = JSON.stringify({
+    walletAddress: walletAddress.toLowerCase(),
+    deviceId,
+    timestamp: Date.now(),
+  });
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(OAUTH_STATE_SECRET),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sigBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
+  const sig = Array.from(new Uint8Array(sigBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  // base64url encode: payload.signature
+  const b64Payload = btoa(payload).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const b64Sig = btoa(sig).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return `${b64Payload}.${b64Sig}`;
+}
+
+export async function verifyOAuthState(
+  state: string,
+): Promise<{ walletAddress: string; deviceId: string } | null> {
+  try {
+    const [b64Payload, b64Sig] = state.split(".");
+    if (!b64Payload || !b64Sig) return null;
+
+    // Restore base64 padding
+    const payload = atob(b64Payload.replace(/-/g, "+").replace(/_/g, "/"));
+    const sig = atob(b64Sig.replace(/-/g, "+").replace(/_/g, "/"));
+
+    // Verify HMAC
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(OAUTH_STATE_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const expectedSigBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
+    const expectedSig = Array.from(new Uint8Array(expectedSigBuffer))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    if (sig !== expectedSig) return null;
+
+    const parsed = JSON.parse(payload);
+
+    // Check 10-minute expiry
+    if (Date.now() - parsed.timestamp > 10 * 60 * 1000) return null;
+
+    return {
+      walletAddress: parsed.walletAddress,
+      deviceId: parsed.deviceId,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ── Strava Provider ──────────────────────────────────────────────────
+
+const STRAVA_TYPE_MAP: Record<string, string> = {
+  Run: "run",
+  VirtualRun: "run",
+  TrailRun: "run",
+  Ride: "cycle",
+  VirtualRide: "cycle",
+  GravelRide: "cycle",
+  MountainBikeRide: "cycle",
+  EBikeRide: "cycle",
+  Walk: "walk",
+  Hike: "hike",
+  Swim: "swim",
+  Yoga: "yoga",
+  Workout: "workout",
+  WeightTraining: "workout",
+  Crossfit: "workout",
+  Elliptical: "workout",
+  StairStepper: "workout",
+  Rowing: "workout",
+  RockClimbing: "workout",
+};
+
+const stravaProvider: FitnessProvider = {
+  name: "strava",
+
+  getAuthUrl(state: string): string {
+    const params = new URLSearchParams({
+      client_id: STRAVA_CLIENT_ID,
+      response_type: "code",
+      redirect_uri: `${APP_URL}/api/mine/fitness/callback`,
+      scope: "activity:read_all",
+      state: `strava.${state}`,
+      approval_prompt: "auto",
+    });
+    return `https://www.strava.com/oauth/authorize?${params}`;
+  },
+
+  async exchangeCode(code: string): Promise<OAuthTokens | null> {
+    try {
+      const res = await fetch("https://www.strava.com/oauth/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: STRAVA_CLIENT_ID,
+          client_secret: STRAVA_CLIENT_SECRET,
+          code,
+          grant_type: "authorization_code",
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return {
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresAt: new Date(data.expires_at * 1000),
+        providerUserId: String(data.athlete?.id || ""),
+      };
+    } catch {
+      return null;
+    }
+  },
+
+  async refreshAccessToken(refreshToken: string): Promise<OAuthTokens | null> {
+    try {
+      const res = await fetch("https://www.strava.com/oauth/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: STRAVA_CLIENT_ID,
+          client_secret: STRAVA_CLIENT_SECRET,
+          refresh_token: refreshToken,
+          grant_type: "refresh_token",
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return {
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresAt: new Date(data.expires_at * 1000),
+        providerUserId: "",
+      };
+    } catch {
+      return null;
+    }
+  },
+
+  async fetchActivities(accessToken: string, since: Date): Promise<NormalizedActivity[]> {
+    try {
+      const after = Math.floor(since.getTime() / 1000);
+      const res = await fetch(
+        `https://www.strava.com/api/v3/athlete/activities?after=${after}&per_page=30`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          signal: AbortSignal.timeout(15_000),
+        },
+      );
+      if (!res.ok) return [];
+      const activities = await res.json();
+      return (activities as Array<Record<string, unknown>>).map((a) => ({
+        startTime: a.start_date as string,
+        type: STRAVA_TYPE_MAP[a.type as string] || "workout",
+        elapsedSeconds: (a.elapsed_time as number) || 0,
+        movingSeconds: (a.moving_time as number) || 0,
+        avgHeartRate: (a.average_heartrate as number) || null,
+        calories: (a.calories as number) || null,
+        distanceMeters: (a.distance as number) || null,
+        rawPayload: a,
+      }));
+    } catch {
+      return [];
+    }
+  },
+
+  async revokeToken(accessToken: string): Promise<boolean> {
+    try {
+      const res = await fetch(
+        `https://www.strava.com/oauth/deauthorize?access_token=${accessToken}`,
+        { method: "POST", signal: AbortSignal.timeout(10_000) },
+      );
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+};
+
+// ── Fitbit Provider ──────────────────────────────────────────────────
+
+const fitbitProvider: FitnessProvider = {
+  name: "fitbit",
+
+  getAuthUrl(state: string): string {
+    const params = new URLSearchParams({
+      client_id: FITBIT_CLIENT_ID,
+      response_type: "code",
+      redirect_uri: `${APP_URL}/api/mine/fitness/callback`,
+      scope: "activity heartrate",
+      state: `fitbit.${state}`,
+    });
+    return `https://www.fitbit.com/oauth2/authorize?${params}`;
+  },
+
+  async exchangeCode(code: string): Promise<OAuthTokens | null> {
+    try {
+      const basicAuth = btoa(`${FITBIT_CLIENT_ID}:${FITBIT_CLIENT_SECRET}`);
+      const res = await fetch("https://api.fitbit.com/oauth2/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Basic ${basicAuth}`,
+        },
+        body: new URLSearchParams({
+          code,
+          grant_type: "authorization_code",
+          redirect_uri: `${APP_URL}/api/mine/fitness/callback`,
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return {
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresAt: new Date(Date.now() + data.expires_in * 1000),
+        providerUserId: data.user_id || "",
+      };
+    } catch {
+      return null;
+    }
+  },
+
+  async refreshAccessToken(refreshToken: string): Promise<OAuthTokens | null> {
+    try {
+      const basicAuth = btoa(`${FITBIT_CLIENT_ID}:${FITBIT_CLIENT_SECRET}`);
+      const res = await fetch("https://api.fitbit.com/oauth2/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Basic ${basicAuth}`,
+        },
+        body: new URLSearchParams({
+          refresh_token: refreshToken,
+          grant_type: "refresh_token",
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return {
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresAt: new Date(Date.now() + data.expires_in * 1000),
+        providerUserId: data.user_id || "",
+      };
+    } catch {
+      return null;
+    }
+  },
+
+  async fetchActivities(accessToken: string, since: Date): Promise<NormalizedActivity[]> {
+    try {
+      const afterDate = since.toISOString().split("T")[0];
+      const res = await fetch(
+        `https://api.fitbit.com/1/user/-/activities/list.json?afterDate=${afterDate}&sort=desc&limit=20&offset=0`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          signal: AbortSignal.timeout(15_000),
+        },
+      );
+      if (!res.ok) return [];
+      const data = await res.json();
+      const activities = data.activities || [];
+      return (activities as Array<Record<string, unknown>>).map((a) => {
+        const name = ((a.activityName as string) || "").toLowerCase();
+        let type = "workout";
+        if (name.includes("run") || name.includes("jog")) type = "run";
+        else if (name.includes("walk")) type = "walk";
+        else if (name.includes("bike") || name.includes("cycl") || name.includes("ride")) type = "cycle";
+        else if (name.includes("swim")) type = "swim";
+        else if (name.includes("hike")) type = "hike";
+        else if (name.includes("yoga")) type = "yoga";
+
+        return {
+          startTime: (a.startTime as string) || (a.startDate as string) || new Date().toISOString(),
+          type,
+          elapsedSeconds: (a.activeDuration as number || 0) / 1000,
+          movingSeconds: (a.activeDuration as number || 0) / 1000,
+          avgHeartRate: (a.averageHeartRate as number) || null,
+          calories: (a.calories as number) || null,
+          distanceMeters: a.distance ? (a.distance as number) * 1000 : null, // Fitbit returns km
+          rawPayload: a,
+        };
+      });
+    } catch {
+      return [];
+    }
+  },
+
+  async revokeToken(accessToken: string): Promise<boolean> {
+    try {
+      const basicAuth = btoa(`${FITBIT_CLIENT_ID}:${FITBIT_CLIENT_SECRET}`);
+      const res = await fetch("https://api.fitbit.com/oauth2/revoke", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Basic ${basicAuth}`,
+        },
+        body: new URLSearchParams({ token: accessToken }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+};
+
+// ── Provider Registry ────────────────────────────────────────────────
+
+const providers: Record<string, FitnessProvider> = {
+  strava: stravaProvider,
+  fitbit: fitbitProvider,
+};
+
+export function getProvider(name: string): FitnessProvider | null {
+  return providers[name.toLowerCase()] || null;
+}
+
+// ── Token Refresh ────────────────────────────────────────────────────
+
+export async function ensureValidToken(
+  connection: FitnessConnection,
+): Promise<{ accessToken: string; updated: boolean } | null> {
+  const provider = getProvider(connection.provider);
+  if (!provider || !connection.access_token) return null;
+
+  // Check if token expires within 5 minutes
+  const expiresAt = connection.token_expires_at ? new Date(connection.token_expires_at) : null;
+  if (expiresAt && expiresAt.getTime() - Date.now() > 5 * 60 * 1000) {
+    return { accessToken: connection.access_token, updated: false };
+  }
+
+  // Token expired or expiring soon — refresh
+  if (!connection.refresh_token) return null;
+  const tokens = await provider.refreshAccessToken(connection.refresh_token);
+  if (!tokens) return null;
+
+  // Update DB with new tokens
+  await supabase
+    .from("fitness_connections")
+    .update({
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
+      token_expires_at: tokens.expiresAt.toISOString(),
+    })
+    .eq("id", connection.id);
+
+  return { accessToken: tokens.accessToken, updated: true };
+}
+
+// ── Store Connection ─────────────────────────────────────────────────
+
+export async function storeConnection(
+  walletAddress: string,
+  deviceId: string,
+  providerName: string,
+  tokens: OAuthTokens,
+): Promise<boolean> {
+  // Deactivate any existing connection for this wallet + provider
+  await supabase
+    .from("fitness_connections")
+    .update({ is_active: false })
+    .eq("wallet_address", walletAddress.toLowerCase())
+    .eq("provider", providerName)
+    .eq("is_active", true);
+
+  const { error } = await supabase.from("fitness_connections").insert({
+    wallet_address: walletAddress.toLowerCase(),
+    device_id: deviceId,
+    provider_user_id: `${providerName}:${tokens.providerUserId}`,
+    provider: providerName,
+    access_token: tokens.accessToken,
+    refresh_token: tokens.refreshToken,
+    token_expires_at: tokens.expiresAt.toISOString(),
+    connected_at: new Date().toISOString(),
+    is_active: true,
+  });
+
+  return !error;
+}
+
+// ── Disconnect ───────────────────────────────────────────────────────
+
+export async function disconnectProvider(
+  walletAddress: string,
+  connection: FitnessConnection,
+): Promise<boolean> {
+  const provider = getProvider(connection.provider);
+
+  // Attempt token revocation (best-effort)
+  if (provider && connection.access_token) {
+    await provider.revokeToken(connection.access_token);
+  }
+
+  const { error } = await supabase
+    .from("fitness_connections")
+    .update({
+      is_active: false,
+      access_token: null,
+      refresh_token: null,
+      token_expires_at: null,
+    })
+    .eq("wallet_address", walletAddress.toLowerCase())
+    .eq("id", connection.id);
+
+  return !error;
+}
+
+// ── Activity Sync ────────────────────────────────────────────────────
+
 export async function syncFitnessActivities(
   walletAddress: string,
   deviceId: string,
-  terraUserId: string,
-  provider: string,
+  connection: FitnessConnection,
 ): Promise<{ synced: number; duplicates: number; errors: number }> {
   const result = { synced: 0, duplicates: 0, errors: 0 };
 
+  const provider = getProvider(connection.provider);
+  if (!provider) {
+    result.errors = 1;
+    return result;
+  }
+
+  // Ensure valid access token
+  const tokenResult = await ensureValidToken(connection);
+  if (!tokenResult) {
+    result.errors = 1;
+    return result;
+  }
+
   try {
     // Fetch last 7 days of activities
-    const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-    const endDate = new Date().toISOString().split("T")[0];
-
-    const url = `${TERRA_BASE_URL}/activity?user_id=${terraUserId}&start_date=${startDate}&end_date=${endDate}`;
-    const res = await fetch(url, {
-      headers: {
-        "x-api-key": TERRA_API_KEY,
-        "dev-id": TERRA_DEV_ID,
-      },
-      signal: AbortSignal.timeout(15_000),
-    });
-
-    if (!res.ok) {
-      result.errors = 1;
-      return result;
-    }
-
-    const data = await res.json();
-    const activities: TerraActivity[] = data.data || [];
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const activities = await provider.fetchActivities(tokenResult.accessToken, since);
 
     // Get consecutive days for consistency bonus
     const { data: streakData } = await supabase
@@ -301,17 +649,14 @@ export async function syncFitnessActivities(
 
     for (const activity of activities) {
       try {
-        const startTime = activity.metadata.start_time;
-        const activityType = mapTerraActivityType(activity.metadata.type);
-        const activitySeconds = activity.active_durations_data?.activity_seconds || 0;
-        const durationMin = activitySeconds / 60;
+        const durationMin = activity.movingSeconds / 60;
 
         // Skip very short activities
         if (durationMin < 5) continue;
 
         // Compute dedup hash
         const activityHash = await computeActivityHash(
-          walletAddress, startTime, activityType, Math.round(durationMin)
+          walletAddress, activity.startTime, activity.type, Math.round(durationMin),
         );
 
         // Check for duplicates
@@ -326,29 +671,28 @@ export async function syncFitnessActivities(
           continue;
         }
 
-        const avgHr = activity.heart_rate_data?.summary?.avg_hr_bpm || null;
+        const avgHr = activity.avgHeartRate;
         const hrZoneMinutes = avgHr ? estimateHrZones(avgHr, durationMin) : null;
-        const activeMinutes = durationMin; // Simplification — use active_durations if available
 
         // Compute effort score
-        const effortBreakdown = computeEffortScore(activeMinutes, hrZoneMinutes, consecutiveDays);
+        const effortBreakdown = computeEffortScore(durationMin, hrZoneMinutes, consecutiveDays);
 
         // SHA-256 of raw payload for audit
-        const rawDataHash = await sha256(JSON.stringify(activity));
+        const rawDataHash = await sha256(JSON.stringify(activity.rawPayload));
 
         const { error } = await supabase.from("fitness_activities").insert({
           wallet_address: walletAddress.toLowerCase(),
           device_id: deviceId,
           activity_hash: activityHash,
-          activity_type: activityType,
+          activity_type: activity.type,
           duration_min: Math.round(durationMin * 10) / 10,
-          active_minutes: Math.round(activeMinutes * 10) / 10,
+          active_minutes: Math.round(durationMin * 10) / 10,
           avg_heart_rate: avgHr,
           hr_zone_minutes: hrZoneMinutes,
-          calories: activity.calories_data?.total_burned_calories || null,
-          distance_m: activity.distance_data?.distance_meters || null,
+          calories: activity.calories,
+          distance_m: activity.distanceMeters,
           effort_score: effortBreakdown.final_score,
-          source_provider: provider,
+          source_provider: connection.provider,
           raw_data_hash: rawDataHash,
           verified: false,
         });
@@ -367,8 +711,7 @@ export async function syncFitnessActivities(
     await supabase
       .from("fitness_connections")
       .update({ last_sync: new Date().toISOString() })
-      .eq("terra_user_id", terraUserId);
-
+      .eq("id", connection.id);
   } catch {
     result.errors++;
   }
