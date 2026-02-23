@@ -44,8 +44,13 @@ export const metadata: Metadata = {
     images: ["/images/og-poh.jpg"],
   },
   icons: {
-    icon: "/logo/poh-token-64x64.png",
+    icon: [
+      { url: "/favicon.png", type: "image/png", sizes: "32x32" },
+      { url: "/logo/poh-token-64x64.png", type: "image/png", sizes: "64x64" },
+      { url: "/logo/poh-token-128x128.png", type: "image/png", sizes: "128x128" },
+    ],
     apple: "/logo/poh-token-256x256.png",
+    shortcut: "/favicon.png",
   },
   manifest: "/manifest.json",
   appleWebApp: {
