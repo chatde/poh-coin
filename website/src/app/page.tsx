@@ -169,7 +169,7 @@ export default function Home() {
               {/* Tagline pill */}
               <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-accent-light backdrop-blur-sm">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-charity-green animate-pulse" />
-                Charity-first crypto
+                Charity-first, health-powered crypto
               </span>
 
               <h1 className="max-w-4xl text-5xl font-extrabold leading-[1.05] tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl">
@@ -181,8 +181,9 @@ export default function Home() {
               </h1>
 
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-foreground/60 sm:text-xl">
-                Every transaction funds environmental, humanitarian, educational,
-                and health causes&nbsp;&mdash; powered by Voyager&nbsp;1&rsquo;s
+                Mine with your phone, earn through fitness, and fund real
+                science&nbsp;&mdash; every transaction supports environmental,
+                humanitarian, and health causes, powered by Voyager&nbsp;1&rsquo;s
                 journey through interstellar space.
               </p>
 

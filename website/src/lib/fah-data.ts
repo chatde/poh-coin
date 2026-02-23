@@ -68,7 +68,7 @@ export async function lookupFahUser(username: string): Promise<FAHUser | null> {
 
 /** Get all members of the POH team */
 export async function getTeamMembers(): Promise<FAHTeamMember[]> {
-  if (FAH_TEAM_ID === 0) return [];
+  if (!FAH_TEAM_ID) return [];
   try {
     const res = await fetch(`${FAH_API_BASE}/team/${FAH_TEAM_ID}/members`, {
       signal: AbortSignal.timeout(15_000),
