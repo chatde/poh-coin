@@ -125,7 +125,7 @@ export default function FAHPanel({ walletAddress }: FAHPanelProps) {
                   Download Folding@Home
                 </a>
               </div>
-              <div>2. In the F@H client, set your Team Number to: <span className="text-green-400 font-mono">TBD</span></div>
+              <div>2. In the F@H client, set your Team Number to: <span className="text-green-400 font-mono">1067948</span></div>
               <div>3. Enter your F@H username below to link</div>
             </div>
           </div>

@@ -9,7 +9,7 @@
 import { supabase } from "@/lib/supabase";
 
 // Set after creating the team at foldingathome.org
-export const FAH_TEAM_ID = 0; // TODO: Replace with actual team ID after registration
+export const FAH_TEAM_ID = 1067948;
 
 const FAH_API_BASE = "https://api.foldingathome.org";
 
