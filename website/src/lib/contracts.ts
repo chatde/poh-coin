@@ -12,13 +12,13 @@ const SEPOLIA_CONTRACTS = {
   registry: "0x6413393Ec4c594F0a9ce9c1B5d2056B4B309E0e6",
 } as const;
 
-// Mainnet addresses — fill after deploy-mainnet.js
+// Mainnet addresses (Base, Chain ID 8453) — deployed 2026-02-23
 const MAINNET_CONTRACTS = {
-  token: "TBD",
-  charity: "TBD",
-  vesting: "TBD",
-  rewards: "TBD",
-  registry: "TBD",
+  token: "0x280Ddb8b67Ad8cf791D370FE59227d19e989Fb07",
+  charity: "0xf9eDc5CF986ea637E724E078DA01AbD7c4957D49",
+  vesting: "0xFfce548EbF097F630A272aA577E750A0Bc1308dd",
+  rewards: "0xa7904Cb5f3D6a937Db06453e3d95db4f0C3236dF",
+  registry: "0x8137a04a50C058b00d9ee44D25b9Ef1ba900D15F",
 } as const;
 
 export const CONTRACTS = IS_MAINNET ? MAINNET_CONTRACTS : SEPOLIA_CONTRACTS;

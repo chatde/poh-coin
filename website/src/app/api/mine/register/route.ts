@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
     let onChainTxHash: string | null = null;
     const signerKey = process.env.BACKEND_SIGNER_KEY;
 
-    if (signerKey && CONTRACTS.registry !== "TBD") {
+    if (signerKey) {
       try {
         const provider = new ethers.JsonRpcProvider(RPC_URL);
         const signer = new ethers.Wallet(signerKey, provider);

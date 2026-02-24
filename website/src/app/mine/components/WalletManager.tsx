@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
-import { RPC_URL, CONTRACTS, TOKEN_ABI, formatPOH } from "@/lib/contracts";
+import { RPC_URL, CONTRACTS, TOKEN_ABI, formatPOH, BLOCK_EXPLORER } from "@/lib/contracts";
 
 interface WalletManagerProps {
   walletAddress: string;
@@ -463,7 +463,7 @@ export default function WalletManager({
             {!mnemonic && unclaimed.length > 0 && (
               <div className="text-yellow-600 text-xs">
                 Using an external wallet. Claim your rewards through the{" "}
-                <a href={`https://sepolia.basescan.org/address/${CONTRACTS.rewards}`} target="_blank" rel="noopener noreferrer" className="text-yellow-400 hover:underline">
+                <a href={`${BLOCK_EXPLORER}/address/${CONTRACTS.rewards}`} target="_blank" rel="noopener noreferrer" className="text-yellow-400 hover:underline">
                   rewards contract
                 </a>{" "}
                 directly, or import your wallet into MetaMask.

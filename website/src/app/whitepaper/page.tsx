@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { FadeIn } from "@/components/motion/FadeIn";
+import { BLOCK_EXPLORER, CONTRACTS, IS_MAINNET } from "@/lib/contracts";
 
 export const metadata: Metadata = {
   title: "Whitepaper — Project POH",
@@ -17,7 +18,7 @@ export default function WhitepaperPage() {
             <h1 className="text-4xl font-bold tracking-tight text-accent-light sm:text-5xl">
               Project POH Whitepaper
             </h1>
-            <p className="mt-4 text-lg text-foreground/50">Version 1.0</p>
+            <p className="mt-4 text-lg text-foreground/50">Version 2.0 — Mainnet Live on Base</p>
           </header>
         </FadeIn>
 
@@ -230,8 +231,9 @@ export default function WhitepaperPage() {
               integer overflow, access control, and more.
             </li>
             <li>
-              A <strong>third-party professional audit</strong> is planned
-              before mainnet launch.
+              All 7 contracts are{" "}
+              <strong>deployed and verified on Base mainnet</strong>. Source
+              code is publicly readable on Basescan.
             </li>
           </ul>
         </Section>
@@ -240,7 +242,10 @@ export default function WhitepaperPage() {
         <Section id="governance" title="Charity Treasury Governance">
           <p>
             The 20% charity treasury (4.905B POH) is the backbone of the
-            project&rsquo;s mission. Governance of this treasury follows a
+            project&rsquo;s mission. Governance is powered by an{" "}
+            <strong>OpenZeppelin Governor</strong> contract with a{" "}
+            <strong>48-hour TimelockController</strong>, enabling fully
+            on-chain token-weighted voting. The system follows a
             progressive decentralisation model:
           </p>
           <ul className="mt-6 list-disc space-y-3 pl-6 marker:text-accent-light">
@@ -272,6 +277,48 @@ export default function WhitepaperPage() {
           </p>
         </Section>
 
+        {/* ── Contract Addresses ── */}
+        <Section id="contracts" title="Verified Smart Contracts">
+          <p>
+            All contracts are deployed on{" "}
+            <strong>{IS_MAINNET ? "Base mainnet" : "Base Sepolia testnet"}</strong>{" "}
+            and verified on Basescan. Click any address to view the source code.
+          </p>
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-surface-light">
+                  <th className="py-3 pr-4 font-semibold text-accent-light">Contract</th>
+                  <th className="py-3 font-semibold text-accent-light">Address</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-light text-foreground/80">
+                {[
+                  { name: "POHToken (ERC-20)", addr: CONTRACTS.token },
+                  { name: "POHCharity (Treasury)", addr: CONTRACTS.charity },
+                  { name: "POHVesting (Founder Lock)", addr: CONTRACTS.vesting },
+                  { name: "POHRewards (Mining)", addr: CONTRACTS.rewards },
+                  { name: "POHNodeRegistry", addr: CONTRACTS.registry },
+                ].map((c) => (
+                  <tr key={c.name}>
+                    <td className="py-3 pr-4 font-medium text-foreground">{c.name}</td>
+                    <td className="py-3">
+                      <a
+                        href={`${BLOCK_EXPLORER}/address/${c.addr}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-xs text-accent-light underline underline-offset-2 hover:text-accent break-all"
+                      >
+                        {c.addr}
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Section>
+
         {/* ── Roadmap ── */}
         <Section id="roadmap" title="Roadmap">
           <ol className="relative border-l-2 border-surface-light pl-8">
@@ -283,15 +330,17 @@ export default function WhitepaperPage() {
             <RoadmapPhase
               phase="Phase 2"
               title="Website + Community"
-              status="active"
+              status="complete"
             />
             <RoadmapPhase
               phase="Phase 3"
               title="Mainnet Launch on Base"
+              status="complete"
             />
             <RoadmapPhase
               phase="Phase 4"
               title="Proof of Impact v1 (Partner-Verified)"
+              status="active"
             />
             <RoadmapPhase
               phase="Phase 5"

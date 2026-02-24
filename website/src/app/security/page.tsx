@@ -3,12 +3,17 @@
 import { FadeIn } from "@/components/motion/FadeIn";
 import { BLOCK_EXPLORER, CONTRACTS, IS_MAINNET } from "@/lib/contracts";
 
+const GOVERNOR_ADDRESS = "0x7C96Ed675033F15a53557f1d0190e00B19522e6e";
+const TIMELOCK_ADDRESS = "0x64981B544a20d6933466c363dD175cA1FaD96Bb6";
+
 const contracts = [
   { name: "POHToken", address: CONTRACTS.token },
   { name: "POHCharity", address: CONTRACTS.charity },
   { name: "POHVesting", address: CONTRACTS.vesting },
   { name: "POHRewards", address: CONTRACTS.rewards },
   { name: "POHNodeRegistry", address: CONTRACTS.registry },
+  { name: "TimelockController", address: TIMELOCK_ADDRESS },
+  { name: "POHGovernor", address: GOVERNOR_ADDRESS },
 ];
 
 export default function SecurityPage() {
@@ -70,7 +75,7 @@ export default function SecurityPage() {
             >
               github.com/chatde/poh-coin
             </a>
-            . A third-party professional audit is planned before mainnet launch.
+            . All contracts are deployed and verified on {IS_MAINNET ? "Base mainnet" : "Base Sepolia testnet"}.
           </p>
         </div>
       </section>

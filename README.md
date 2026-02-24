@@ -33,17 +33,19 @@ Change the trajectory of humankind by creating the most trusted charity crypto e
 - 10% Founder (4-year vesting, 6-month cliff)
 - 5% Airdrop / Marketing
 
-## Smart Contracts (5)
+## Smart Contracts (7)
 
 | Contract | Purpose |
 |----------|---------|
-| `POHToken.sol` | ERC20 with fees, anti-whale, Pausable |
+| `POHToken.sol` | ERC20 + ERC20Votes + ERC20Permit with fees, anti-whale, Pausable |
 | `POHVesting.sol` | Founder vesting (4yr linear, 6mo cliff) |
 | `POHCharity.sol` | Timelocked charity treasury with proposals |
 | `POHRewards.sol` | Merkle-based mining rewards with 24hr timelock + vesting |
 | `POHNodeRegistry.sol` | Device registration, reputation, validator staking/slashing |
+| `TimelockController` | 48-hour execution delay for governance actions |
+| `POHGovernor.sol` | OpenZeppelin Governor — token-weighted DAO voting |
 
-All contracts built on OpenZeppelin v5, Solidity 0.8.24.
+All contracts built on OpenZeppelin v5.4.0, Solidity 0.8.24, EVM version Cancun.
 
 ## Proof of Planet — Phone Mining
 
@@ -52,6 +54,7 @@ Mine POH with your phone by contributing compute power to scientific research:
 - **Protein Folding** — Ubiquitin (Parkinson's), Crambin (Drug Design), Ribonuclease (Cancer)
 - **Climate Modeling** — Arctic Ice Melt, Pacific Ocean Heat Transport, Urban Heat Islands
 - **Seismic Analysis** — Earthquake Early Warning (Noto Japan, Turkey-Syria, Cascadia)
+- **Drug Screening** — Virtual docking against cancer-related targets (EGFR, BRAF, HER2)
 
 ### How It Works
 
@@ -70,7 +73,23 @@ Mine POH with your phone by contributing compute power to scientific research:
 - 15-minute heartbeat with challenge-response verification
 - Real science datasets from PDB, NOAA, and USGS
 
-## Testnet Deployment (Base Sepolia)
+## Mainnet Deployment (Base)
+
+| Contract | Address |
+|----------|---------|
+| POHToken | [`0x280Ddb8b67Ad8cf791D370FE59227d19e989Fb07`](https://basescan.org/address/0x280Ddb8b67Ad8cf791D370FE59227d19e989Fb07) |
+| POHCharity | [`0xf9eDc5CF986ea637E724E078DA01AbD7c4957D49`](https://basescan.org/address/0xf9eDc5CF986ea637E724E078DA01AbD7c4957D49) |
+| POHVesting | [`0xFfce548EbF097F630A272aA577E750A0Bc1308dd`](https://basescan.org/address/0xFfce548EbF097F630A272aA577E750A0Bc1308dd) |
+| POHRewards | [`0xa7904Cb5f3D6a937Db06453e3d95db4f0C3236dF`](https://basescan.org/address/0xa7904Cb5f3D6a937Db06453e3d95db4f0C3236dF) |
+| POHNodeRegistry | [`0x8137a04a50C058b00d9ee44D25b9Ef1ba900D15F`](https://basescan.org/address/0x8137a04a50C058b00d9ee44D25b9Ef1ba900D15F) |
+| TimelockController | [`0x64981B544a20d6933466c363dD175cA1FaD96Bb6`](https://basescan.org/address/0x64981B544a20d6933466c363dD175cA1FaD96Bb6) |
+| POHGovernor | [`0x7C96Ed675033F15a53557f1d0190e00B19522e6e`](https://basescan.org/address/0x7C96Ed675033F15a53557f1d0190e00B19522e6e) |
+| Uniswap V3 Pool | [`0x29A160A9C535F1460146d7DF19d49f9ae1eb2FbD`](https://basescan.org/address/0x29A160A9C535F1460146d7DF19d49f9ae1eb2FbD) |
+
+All contracts verified on [Basescan](https://basescan.org). ENS: `projectpoh.eth`
+
+<details>
+<summary>Testnet Deployment (Base Sepolia)</summary>
 
 | Contract | Address |
 |----------|---------|
@@ -80,17 +99,18 @@ Mine POH with your phone by contributing compute power to scientific research:
 | POHRewards | `0x136EB82Ce350a7f391DC02223a878A8FcA4028Fe` |
 | POHNodeRegistry | `0x6413393Ec4c594F0a9ce9c1B5d2056B4B309E0e6` |
 
-All contracts verified on [Basescan](https://sepolia.basescan.org).
+</details>
 
 ## Security
 
-- **Static Analysis**: Slither — no critical findings
+- **Static Analysis**: Slither — no critical findings across all contracts
 - **Formal Verification**: Mythril — no issues detected
-- **OpenZeppelin v5**: Industry-standard contract library
-- **Timelock**: 24-hour delay on merkle root changes
+- **OpenZeppelin v5.4.0**: Industry-standard contract library
+- **Timelock**: 24-hour delay on merkle root changes, 48-hour governance timelock
 - **Anti-whale**: 2% max wallet, 1% max transaction
 - **Vesting**: Founder tokens locked 4 years with 6-month cliff
-- **Third-party audit**: Not yet completed (planned pre-mainnet)
+- **Governance**: Token-weighted voting with 4% quorum and 7-day voting period
+- **All contracts verified on Basescan** — source code publicly readable
 
 ## Tech Stack
 
@@ -107,29 +127,29 @@ All contracts verified on [Basescan](https://sepolia.basescan.org).
 cd /
 npm install
 npx hardhat compile
-npx hardhat test           # 140 tests
+npx hardhat test           # 166 tests
 
 # Website
 cd website/
 npm install
 npm run dev                # Local development
-npm run build              # Production build (27 routes)
+npm run build              # Production build (39 routes)
 ```
 
 ## Tests
 
-- **140 total tests passing**
+- **166 total tests passing**
   - 30 POHToken tests
   - 61 POHRewards tests (including timelock + vesting)
   - 48 POHNodeRegistry tests
   - 1 POHVesting test
+  - 26 POHGovernor tests
 
 ## Legal
 
 - [Disclaimers](https://projectpoh.com/disclaimers) — 10-section legal disclaimer
 - POH is not an investment and not financial advice
 - Not a registered charity — charity distributions are discretionary
-- Smart contracts not yet audited by third-party firm
 - See disclaimers page for full legal terms
 
 ## License

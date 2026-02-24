@@ -272,13 +272,13 @@ After deployment, fill in these addresses:
 
 | Contract           | Address |
 |--------------------|---------|
-| POHToken           | `TBD`   |
-| POHCharity         | `TBD`   |
-| POHVesting         | `TBD`   |
-| POHRewards         | `TBD`   |
-| POHNodeRegistry    | `TBD`   |
-| TimelockController | `TBD`   |
-| POHGovernor        | `TBD`   |
-| Uniswap V3 Pool   | `TBD`   |
+| POHToken           | `0x280Ddb8b67Ad8cf791D370FE59227d19e989Fb07` |
+| POHCharity         | `0xf9eDc5CF986ea637E724E078DA01AbD7c4957D49` |
+| POHVesting         | `0xFfce548EbF097F630A272aA577E750A0Bc1308dd` |
+| POHRewards         | `0xa7904Cb5f3D6a937Db06453e3d95db4f0C3236dF` |
+| POHNodeRegistry    | `0x8137a04a50C058b00d9ee44D25b9Ef1ba900D15F` |
+| TimelockController | `0x64981B544a20d6933466c363dD175cA1FaD96Bb6` |
+| POHGovernor        | `0x7C96Ed675033F15a53557f1d0190e00B19522e6e` |
+| Uniswap V3 Pool   | `TBD` (create after LP setup)   |
 | LP NFT Token ID    | `TBD`   |
-| Deployer           | `TBD`   |
+| Deployer           | `0x2d0BbA61E34015F2e511d96A40980e90882ba768` |

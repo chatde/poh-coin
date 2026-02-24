@@ -130,6 +130,74 @@ export default function GovernancePage() {
           </div>
         </Section>
 
+        {/* ── Where to Vote ── */}
+        <Section id="where-to-vote" title="Where to Vote">
+          <div className="glass-card p-8 text-center">
+            <p className="text-lg font-medium text-foreground/90">
+              POH governance uses{" "}
+              <strong className="text-accent-light">Tally</strong>, the
+              leading governance front-end for on-chain DAOs. Connect your
+              wallet, view proposals, and cast your vote.
+            </p>
+            <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+              <a
+                href="https://www.tally.xyz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-accent to-accent-light px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent/25 transition-all hover:shadow-accent/40 hover:scale-105"
+              >
+                Vote on Tally
+              </a>
+            </div>
+            <p className="mt-4 text-foreground/40 text-xs">
+              Once the POH Governor is registered on Tally, you can view all
+              proposals, delegate voting power, and vote directly from the
+              Tally interface. You can also use the governance contracts
+              directly via Basescan.
+            </p>
+          </div>
+        </Section>
+
+        {/* ── Governance Contracts ── */}
+        <Section id="contracts" title="Governance Contracts">
+          <div className="glass-card overflow-x-auto p-6">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-surface-light">
+                  <th className="py-3 pr-4 font-semibold text-accent-light">Contract</th>
+                  <th className="py-3 font-semibold text-accent-light">Address</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-light text-foreground/80">
+                <tr>
+                  <td className="py-3 pr-4 font-medium text-foreground">POHGovernor</td>
+                  <td className="py-3">
+                    <a href="https://basescan.org/address/0x7C96Ed675033F15a53557f1d0190e00B19522e6e" target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-accent-light underline underline-offset-2 hover:text-accent break-all">
+                      0x7C96Ed675033F15a53557f1d0190e00B19522e6e
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-3 pr-4 font-medium text-foreground">TimelockController</td>
+                  <td className="py-3">
+                    <a href="https://basescan.org/address/0x64981B544a20d6933466c363dD175cA1FaD96Bb6" target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-accent-light underline underline-offset-2 hover:text-accent break-all">
+                      0x64981B544a20d6933466c363dD175cA1FaD96Bb6
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-3 pr-4 font-medium text-foreground">POHToken (voting power)</td>
+                  <td className="py-3">
+                    <a href="https://basescan.org/address/0x280Ddb8b67Ad8cf791D370FE59227d19e989Fb07" target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-accent-light underline underline-offset-2 hover:text-accent break-all">
+                      0x280Ddb8b67Ad8cf791D370FE59227d19e989Fb07
+                    </a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Section>
+
         {/* ── Progressive Decentralization ── */}
         <Section id="decentralization" title="Progressive Decentralization">
           <p>

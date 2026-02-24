@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { FadeIn } from "@/components/motion/FadeIn";
+import { CONTRACTS } from "@/lib/contracts";
 
 export const metadata: Metadata = {
   title: "How to Buy POH — Project POH",
@@ -210,7 +211,7 @@ const steps = [
             <span>
               Paste the POH token contract address:
               <span className="mt-2 block rounded-md border border-voyager-gold/30 bg-voyager-gold/5 px-3 py-2 font-mono text-sm text-voyager-gold">
-                Contract address: TBD &mdash; will be published at launch
+                {CONTRACTS.token}
               </span>
             </span>
           </li>

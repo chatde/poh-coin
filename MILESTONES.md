@@ -158,23 +158,26 @@
   - [x] `DEPLOYMENT_CHECKLIST.md` — updated expected test count from 140 → 166
   - [x] `npm run build` — clean compilation, zero errors (39 routes)
   - [x] Grep confirmed zero remaining hardcoded `sepolia.basescan.org` references in website src (only the proper conditional fallback in `contracts.ts`)
-- [ ] **Part 2: Wallet & funding (manual)**
-  - [ ] Generate fresh deployer wallet via `npx hardhat console` → `ethers.Wallet.createRandom()`
-  - [ ] Fund deployer with ~$100-150 ETH on Base (Coinbase direct withdrawal)
-  - [ ] Set `DEPLOYER_PRIVATE_KEY`, `BASESCAN_API_KEY`, `CONFIRM_MAINNET=true` in `.env`
-- [ ] **Part 3: Deployment**
-  - [ ] `npx hardhat compile` + `npx hardhat test` (expect 166 passing)
-  - [ ] Dry run: `npx hardhat run scripts/deploy-mainnet.js` (local Hardhat, no ETH)
-  - [ ] Real deploy: `CONFIRM_MAINNET=true npx hardhat run scripts/deploy-mainnet.js --network base`
-  - [ ] Create Uniswap V3 LP: `CONFIRM_MAINNET=true npx hardhat run scripts/create-lp.js --network base`
-  - [ ] Mark AMM pair: `token.setAutomatedMarketMaker(POOL_ADDRESS, true)`
-- [ ] **Part 4: Website go-live**
-  - [ ] Fill `MAINNET_CONTRACTS` in `website/src/lib/contracts.ts` with deployed addresses
-  - [ ] Update Vercel env vars: `NEXT_PUBLIC_CHAIN_ID=8453` + contract addresses
+- [x] **Part 2: Wallet & funding**
+  - [x] Deployer wallet: `0x2D0BbA61E34015F2e511d96A40980e90882ba768`
+  - [x] Funded with ETH on Base (~$15) and Ethereum mainnet (~$150)
+  - [x] Set `DEPLOYER_PRIVATE_KEY`, `BASESCAN_API_KEY` in `.env`
+  - [x] Registered `projectpoh.eth` ENS domain (1 year)
+- [x] **Part 3: Deployment (2026-02-23)**
+  - [x] Dry run: all 7 contracts deploy + configure on local Hardhat
+  - [x] Real deploy: `CONFIRM_MAINNET=true npx hardhat run scripts/deploy-mainnet.js --network base`
+  - [x] Configuration completed via `scripts/finish-config.js` (exemptions, token distribution, governance roles)
+  - [x] Create Uniswap V3 LP: pool + AMM pair + liquidity added
+  - [x] Pool: `0x29A160A9C535F1460146d7DF19d49f9ae1eb2FbD` (LP NFT #4689781)
+- [x] **Part 4: Website go-live**
+  - [x] Filled `MAINNET_CONTRACTS` in `website/src/lib/contracts.ts`
+  - [ ] Update Vercel env vars: `NEXT_PUBLIC_CHAIN_ID=8453`
   - [ ] Trigger Vercel redeploy, verify mainnet data on all pages
-- [ ] **Part 5: Post-launch**
+- [x] **Part 5: Post-launch**
   - [ ] Test swap fees on Uniswap (1% buy, 3% sell)
-  - [ ] Update MILESTONES.md with mainnet addresses
+  - [x] Verify all 7 contracts on Basescan — source code verified
+  - [x] Update whitepaper, governance, security, research pages for mainnet
+  - [x] Update README with mainnet addresses + governance info
   - [ ] Git commit + push
 
 ## Phase 6: Proof of Impact — Ongoing
@@ -214,11 +217,15 @@
 - POHNodeRegistry: `0x6413393Ec4c594F0a9ce9c1B5d2056B4B309E0e6`
 - Deployer: `0x4F5F81bb6B9BadADFb9ab8303530DF5BCdd5368a`
 
-## Contract Addresses — Base Mainnet (fill after deploy-mainnet.js)
-- POHToken: `TBD`
-- POHVesting: `TBD`
-- POHCharity: `TBD`
-- POHRewards: `TBD`
-- POHNodeRegistry: `TBD`
-- TimelockController: `TBD`
-- POHGovernor: `TBD`
+## Contract Addresses — Base Mainnet (deployed 2026-02-23)
+- POHToken: `0x280Ddb8b67Ad8cf791D370FE59227d19e989Fb07`
+- POHVesting: `0xFfce548EbF097F630A272aA577E750A0Bc1308dd`
+- POHCharity: `0xf9eDc5CF986ea637E724E078DA01AbD7c4957D49`
+- POHRewards: `0xa7904Cb5f3D6a937Db06453e3d95db4f0C3236dF`
+- POHNodeRegistry: `0x8137a04a50C058b00d9ee44D25b9Ef1ba900D15F`
+- TimelockController: `0x64981B544a20d6933466c363dD175cA1FaD96Bb6`
+- POHGovernor: `0x7C96Ed675033F15a53557f1d0190e00B19522e6e`
+- Uniswap V3 Pool: `0x29A160A9C535F1460146d7DF19d49f9ae1eb2FbD`
+- LP NFT Token ID: `4689781`
+- Deployer: `0x2D0BbA61E34015F2e511d96A40980e90882ba768`
+- ENS: `projectpoh.eth`
