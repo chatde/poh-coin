@@ -38,9 +38,10 @@
 - [ ] Verify charity treasury accumulates fees
 
 ## Phase 4: Community & Socials
-- [ ] Set up Twitter/X
-- [ ] Set up Discord server
-- [ ] Set up Telegram
+- [x] Set up Twitter/X — https://x.com/projectpoh
+- [x] Set up Discord server — https://discord.com/invite/4P3bjZRsz
+- [x] Set up Telegram — https://t.me/projectpoh
+- [x] Set up Instagram — https://instagram.com/project_poh
 - [x] Public GitHub repo — https://github.com/chatde/poh-coin
 - [ ] Pre-launch content + announcement thread
 
