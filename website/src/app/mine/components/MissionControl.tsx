@@ -8,6 +8,7 @@ import {
   TerminalLog,
   BlinkingCursor,
 } from "./Terminal";
+import { calculateWeeklyPool } from "@/lib/constants";
 
 interface MissionControlProps {
   status: "idle" | "loading" | "computing" | "submitting" | "error";
@@ -193,6 +194,38 @@ export default function MissionControl({
             color={batteryLevel > 20 ? "green" : "red"}
           />
         )}
+      </div>
+
+      {/* Rewards Explainer */}
+      <div className="border border-green-800 rounded p-3">
+        <div className="text-green-500 text-xs uppercase tracking-widest mb-2">
+          Epoch Rewards
+        </div>
+        <div className="space-y-2 text-xs">
+          <div className="flex justify-between items-center">
+            <span className="text-green-600">WEEKLY POOL</span>
+            <span className="text-green-400 font-bold">
+              {Math.round(calculateWeeklyPool()).toLocaleString()} POH
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-green-600">YOUR SHARE</span>
+            <span className="text-green-400 font-bold">
+              {points > 0 && stats?.activeNodes
+                ? "Proportional to your points"
+                : "Start mining to earn"}
+            </span>
+          </div>
+          <div className="mt-2 border-t border-green-900 pt-2">
+            <div className="text-green-700 leading-relaxed">
+              Each epoch = 1 week. You earn 1 point per verified task.
+              At epoch end, ~{(calculateWeeklyPool() / 1_000_000).toFixed(1)}M POH
+              is split among all miners proportional to points earned.
+              Fewer miners = more POH per point. Bonuses for streaks,
+              quality, and referrals.
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Global Impact */}
