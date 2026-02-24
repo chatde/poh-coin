@@ -150,6 +150,47 @@ function IconChevronDown({ className }: { className?: string }) {
   );
 }
 
+function IconPaw({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="4" r="2" />
+      <circle cx="18" cy="8" r="2" />
+      <circle cx="4" cy="8" r="2" />
+      <path d="M16.5 14.5c0 3.04-2.01 5.5-4.5 5.5s-4.5-2.46-4.5-5.5S9.51 10 12 10s4.5 2.46 4.5 4.5z" />
+      <circle cx="17" cy="14" r="2" />
+      <circle cx="5" cy="14" r="2" />
+    </svg>
+  );
+}
+
+function IconHome({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  );
+}
+
+function IconGlobe({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+      <path d="M2 12h20" />
+    </svg>
+  );
+}
+
+function ArrowRight({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14" />
+      <path d="m12 5 7 7-7 7" />
+    </svg>
+  );
+}
+
 /* ---------- Data ---------- */
 
 const allocations = [
@@ -164,7 +205,7 @@ const trustSignals = [
   {
     icon: IconCode,
     title: "Open Source",
-    description: "All 5 contracts verified on Basescan. Slither + Mythril static analysis passed clean.",
+    description: "All contracts verified on Basescan. Slither + Mythril static analysis passed clean.",
     href: "https://github.com/chatde/poh-coin",
   },
   {
@@ -211,9 +252,44 @@ const steps = [
   {
     icon: IconSparkles,
     title: "Impact",
-    description: "Your rewards fund real science, charity, and environmental causes automatically.",
+    description: "Your rewards fund real science, charity, and animal rescue automatically.",
     accent: "text-accent-light",
     bg: "bg-accent/10",
+  },
+];
+
+const missionPillars = [
+  {
+    icon: IconCpu,
+    title: "Computing for Good",
+    description: "Your phone and computer solve real scientific problems — protein folding, disease research, climate modeling — earning POH while advancing humanity.",
+    accent: "text-accent-light",
+    bg: "bg-accent/10",
+    glow: "rgba(129, 140, 248, 0.4)",
+  },
+  {
+    icon: IconPaw,
+    title: "Animal Rescue",
+    description: "Every transaction saves lives. Funding shelters, preventing euthanasia, and building sanctuary farms where rescued animals live freely.",
+    accent: "text-charity-green",
+    bg: "bg-charity-green/10",
+    glow: "rgba(16, 185, 129, 0.4)",
+  },
+  {
+    icon: IconHeart,
+    title: "Human Health",
+    description: "Fitness mining rewards healthy living. Charity funds flow to medical research, mental health, and healthcare access for underserved communities.",
+    accent: "text-rose-400",
+    bg: "bg-rose-500/10",
+    glow: "rgba(251, 113, 133, 0.4)",
+  },
+  {
+    icon: IconGlobe,
+    title: "Planet Sustainability",
+    description: "Reforestation, ocean cleanup, renewable energy — everything that makes Earth healthier for future generations, funded transparently on-chain.",
+    accent: "text-voyager-gold",
+    bg: "bg-voyager-gold/10",
+    glow: "rgba(245, 158, 11, 0.4)",
   },
 ];
 
@@ -229,13 +305,13 @@ export default function Home() {
           <StarField />
         </div>
 
-        {/* Voyager spacecraft + parallax layers */}
+        {/* Voyager spacecraft + parallax layers + particle trails */}
         <div className="absolute inset-0 -z-20">
           <VoyagerBackground />
         </div>
 
         {/* Dark gradient overlay for readability */}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/60 via-background/40 to-background" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/50 via-background/30 to-background" />
 
         <div className="mx-auto max-w-7xl px-4 pb-24 pt-28 sm:px-6 sm:pt-36 lg:px-8 lg:pt-44">
           <FadeIn>
@@ -243,11 +319,11 @@ export default function Home() {
               {/* Tagline pill */}
               <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-accent-light backdrop-blur-sm">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-charity-green animate-pulse" />
-                Mine health. Fund science. Power change.
+                Built on Base &middot; Powered by Purpose
               </span>
 
               {/* Animated gradient headline */}
-              <h1 className="max-w-4xl text-5xl font-extrabold leading-[1.05] tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl">
+              <h1 className="max-w-5xl text-5xl font-extrabold leading-[1.05] tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl">
                 Change the Trajectory{" "}
                 <br className="hidden sm:block" />
                 <span className="gradient-text-animated">
@@ -256,9 +332,9 @@ export default function Home() {
               </h1>
 
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-foreground/60 sm:text-xl">
-                Mine with your phone, earn through fitness, and fund real
-                science&nbsp;&mdash; every transaction supports environmental,
-                humanitarian, and health causes, powered by Voyager&nbsp;1&rsquo;s
+                The first cryptocurrency built for the health of both the planet
+                and its people. Mine with your phone, earn through fitness, save
+                animals, fund science&nbsp;&mdash; all powered by Voyager&nbsp;1&rsquo;s
                 journey through interstellar space.
               </p>
 
@@ -295,7 +371,167 @@ export default function Home() {
       {/* Gradient divider */}
       <div className="h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
 
-      {/* ═══════════════════ SECTION 2 — WHAT MAKES POH DIFFERENT (Bento Grid) ═══════════════════ */}
+      {/* ═══════════════════ SECTION 2 — OUR MISSION ═══════════════════ */}
+      <ParallaxSection className="py-28 sm:py-36">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <FadeIn>
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="text-sm font-semibold uppercase tracking-widest text-charity-green">
+                Our Mission
+              </h2>
+              <p className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">
+                The first crypto for{" "}
+                <span className="gradient-text-animated">the planet.</span>
+              </p>
+              <p className="mt-6 text-lg leading-relaxed text-foreground/60">
+                Project POH &mdash; the Pursuit of Happiness &mdash; is the first
+                cryptocurrency built entirely for the benefit of planetary health
+                and human well-being. Your computing power solves real scientific
+                problems. Your transactions save animals from euthanasia.
+                Your participation funds environmental sustainability, humanitarian
+                aid, and medical research. Every buy, sell, and transfer automatically
+                allocates funds to verified causes &mdash; hardcoded on-chain,
+                transparent forever.
+              </p>
+            </div>
+          </FadeIn>
+
+          {/* Mission pillars */}
+          <StaggerParent className="mt-20 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {missionPillars.map((pillar) => {
+              const Icon = pillar.icon;
+              return (
+                <StaggerChild key={pillar.title}>
+                  <TiltCard className="h-full rounded-2xl" glowColor={pillar.glow}>
+                    <div className="glass-card flex h-full flex-col items-center p-8 text-center">
+                      <div className={`mb-5 inline-flex h-14 w-14 items-center justify-center rounded-full ${pillar.bg} ${pillar.accent}`}>
+                        <Icon className="h-7 w-7" />
+                      </div>
+                      <h3 className={`text-lg font-bold ${pillar.accent}`}>{pillar.title}</h3>
+                      <p className="mt-3 text-sm leading-relaxed text-foreground/60">
+                        {pillar.description}
+                      </p>
+                    </div>
+                  </TiltCard>
+                </StaggerChild>
+              );
+            })}
+          </StaggerParent>
+        </div>
+      </ParallaxSection>
+
+      {/* Gradient divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-charity-green/30 to-transparent" />
+
+      {/* ═══════════════════ SECTION 3 — SAVE EVERY LIFE (Animal Rescue) ═══════════════════ */}
+      <ParallaxSection className="relative py-28 sm:py-36 overflow-hidden">
+        {/* Background glow */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center -z-10">
+          <div className="h-[500px] w-[700px] rounded-full bg-charity-green/8 blur-[150px]" />
+        </div>
+
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid items-center gap-16 lg:grid-cols-2">
+            {/* Left — Story */}
+            <FadeIn>
+              <div>
+                <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-charity-green/30 bg-charity-green/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-charity-green">
+                  <IconPaw className="h-3.5 w-3.5" />
+                  Save Every Life
+                </span>
+                <h2 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">
+                  Every animal{" "}
+                  <span className="text-charity-green">deserves a chance.</span>
+                </h2>
+                <p className="mt-6 text-lg leading-relaxed text-foreground/60">
+                  Millions of animals enter shelters every year. Too many never leave.
+                  Project POH is building a future where blockchain funding directly
+                  saves animals from euthanasia, provides veterinary care, and gives
+                  them a forever home.
+                </p>
+                <p className="mt-4 text-lg leading-relaxed text-foreground/60">
+                  Our long-term vision: a sanctuary farm where every rescued animal
+                  lives freely&nbsp;&mdash; funded permanently by on-chain charity
+                  allocations that can never be turned off.
+                </p>
+                <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                  <Link
+                    href="/impact"
+                    className="inline-flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-charity-green to-emerald-600 px-6 text-sm font-semibold text-white shadow-lg shadow-charity-green/25 transition-all hover:shadow-charity-green/40 hover:scale-105"
+                  >
+                    View Impact Dashboard
+                  </Link>
+                  <Link
+                    href="/whitepaper"
+                    className="inline-flex h-12 items-center gap-1 justify-center rounded-xl border border-charity-green/30 bg-charity-green/5 px-6 text-sm font-semibold text-charity-green transition-all hover:bg-charity-green/10"
+                  >
+                    How It Works
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+            </FadeIn>
+
+            {/* Right — Impact Stats */}
+            <FadeIn delay={0.2}>
+              <div className="grid grid-cols-2 gap-4">
+                <TiltCard className="rounded-2xl" glowColor="rgba(16, 185, 129, 0.3)">
+                  <div className="glass-card flex flex-col items-center p-6 text-center glow-pulse-green">
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-charity-green/10">
+                      <IconPaw className="h-6 w-6 text-charity-green" />
+                    </div>
+                    <p className="text-3xl font-extrabold text-charity-green">
+                      <CountUp end={20} duration={2} suffix="%" />
+                    </p>
+                    <p className="mt-1 text-xs text-foreground/50">of supply for charity</p>
+                  </div>
+                </TiltCard>
+
+                <TiltCard className="rounded-2xl" glowColor="rgba(16, 185, 129, 0.3)">
+                  <div className="glass-card flex flex-col items-center p-6 text-center">
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-charity-green/10">
+                      <IconHeart className="h-6 w-6 text-charity-green animate-heartbeat" />
+                    </div>
+                    <p className="text-3xl font-extrabold text-charity-green">
+                      <CountUp end={100} duration={2} suffix="%" />
+                    </p>
+                    <p className="mt-1 text-xs text-foreground/50">on-chain transparent</p>
+                  </div>
+                </TiltCard>
+
+                <TiltCard className="rounded-2xl" glowColor="rgba(16, 185, 129, 0.3)">
+                  <div className="glass-card flex flex-col items-center p-6 text-center">
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-charity-green/10">
+                      <IconHome className="h-6 w-6 text-charity-green" />
+                    </div>
+                    <p className="text-3xl font-extrabold text-charity-green">
+                      <CountUp end={1} duration={1} suffix="" />
+                    </p>
+                    <p className="mt-1 text-xs text-foreground/50">sanctuary farm (goal)</p>
+                  </div>
+                </TiltCard>
+
+                <TiltCard className="rounded-2xl" glowColor="rgba(16, 185, 129, 0.3)">
+                  <div className="glass-card flex flex-col items-center p-6 text-center">
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-charity-green/10">
+                      <IconShield className="h-6 w-6 text-charity-green" />
+                    </div>
+                    <p className="text-3xl font-extrabold text-charity-green">
+                      <CountUp end={0} duration={1} suffix="" />
+                    </p>
+                    <p className="mt-1 text-xs text-foreground/50">rug-pull risk (hardcoded)</p>
+                  </div>
+                </TiltCard>
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </ParallaxSection>
+
+      {/* Gradient divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
+
+      {/* ═══════════════════ SECTION 4 — WHAT MAKES POH DIFFERENT (Bento Grid) ═══════════════════ */}
       <ParallaxSection className="py-28 sm:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <FadeIn>
@@ -331,7 +567,7 @@ export default function Home() {
                     className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-accent-light hover:text-accent transition-colors"
                   >
                     Start mining now
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+                    <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
               </TiltCard>
@@ -353,17 +589,17 @@ export default function Home() {
               </TiltCard>
             </StaggerChild>
 
-            {/* Card — Automatic Charity */}
+            {/* Card — Save Animals */}
             <StaggerChild>
               <TiltCard className="h-full rounded-2xl" glowColor="rgba(16, 185, 129, 0.4)">
                 <div className="glass-card flex h-full flex-col p-8">
                   <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-charity-green/10 text-charity-green">
-                    <IconHeart className="h-6 w-6" />
+                    <IconPaw className="h-6 w-6" />
                   </div>
-                  <h3 className="text-lg font-bold">Automatic Charity</h3>
+                  <h3 className="text-lg font-bold">Save Animals</h3>
                   <p className="mt-3 text-sm leading-relaxed text-foreground/60">
-                    Every transaction allocates fees to verified charitable causes.
-                    No DAO vote needed — it&rsquo;s hardcoded into the smart contract.
+                    Transaction fees fund animal rescue operations. Our goal: pull animals
+                    from kill shelters and build a sanctuary farm where they live freely.
                   </p>
                 </div>
               </TiltCard>
@@ -391,7 +627,7 @@ export default function Home() {
       {/* Gradient divider */}
       <div className="h-px bg-gradient-to-r from-transparent via-voyager-gold/30 to-transparent" />
 
-      {/* ═══════════════════ SECTION 3 — HOW MINING WORKS ═══════════════════ */}
+      {/* ═══════════════════ SECTION 5 — HOW MINING WORKS ═══════════════════ */}
       <ParallaxSection className="py-28 sm:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <FadeIn>
@@ -450,7 +686,7 @@ export default function Home() {
       {/* Gradient divider */}
       <div className="h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
 
-      {/* ═══════════════════ SECTION 4 — TOKENOMICS ═══════════════════ */}
+      {/* ═══════════════════ SECTION 6 — VOYAGER TOKENOMICS ═══════════════════ */}
       <ParallaxSection className="py-28 sm:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <FadeIn>
@@ -475,7 +711,7 @@ export default function Home() {
               <TiltCard className="rounded-2xl" glowColor="rgba(245, 158, 11, 0.3)">
                 <div className="glass-card p-6 text-center">
                   <p className="text-sm font-medium text-foreground/50">Max Supply</p>
-                  <p className="mt-2 text-3xl font-extrabold tracking-tight text-foreground">
+                  <p className="mt-2 text-3xl font-extrabold tracking-tight text-foreground stat-glow">
                     <CountUp end={24.526} duration={2.5} decimals={3} suffix="B" />
                   </p>
                   <p className="mt-1 text-xs text-foreground/40">tied to Voyager 1</p>
@@ -555,10 +791,7 @@ export default function Home() {
               className="inline-flex items-center gap-1 text-sm font-medium text-accent-light transition-colors hover:text-accent"
             >
               Full tokenomics in the whitepaper
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12h14" />
-                <path d="m12 5 7 7-7 7" />
-              </svg>
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -567,7 +800,7 @@ export default function Home() {
       {/* Gradient divider */}
       <div className="h-px bg-gradient-to-r from-transparent via-charity-green/30 to-transparent" />
 
-      {/* ═══════════════════ SECTION 5 — BUILT FOR TRUST ═══════════════════ */}
+      {/* ═══════════════════ SECTION 7 — BUILT FOR TRUST ═══════════════════ */}
       <ParallaxSection className="py-28 sm:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <FadeIn>
@@ -577,6 +810,10 @@ export default function Home() {
               </h2>
               <p className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
                 Built for Trust
+              </p>
+              <p className="mx-auto mt-4 max-w-2xl text-foreground/60">
+                No hidden keys. No admin backdoors. Charity funding is hardcoded
+                into the smart contracts and can never be disabled.
               </p>
             </div>
           </FadeIn>
@@ -617,8 +854,8 @@ export default function Home() {
       {/* Gradient divider */}
       <div className="h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
 
-      {/* ═══════════════════ SECTION 6 — BOTTOM CTA ═══════════════════ */}
-      <section className="relative py-28 sm:py-32">
+      {/* ═══════════════════ SECTION 8 — BOTTOM CTA ═══════════════════ */}
+      <section className="relative py-28 sm:py-36">
         {/* Glowing background orb */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center -z-10">
           <div className="h-[400px] w-[600px] rounded-full bg-accent/10 blur-[120px] animate-[pulse-slow_4s_ease-in-out_infinite]" />
@@ -626,16 +863,17 @@ export default function Home() {
 
         <FadeIn>
           <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-5xl">
               Ready to{" "}
               <span className="gradient-text-animated">
                 make an impact
               </span>
               ?
             </h2>
-            <p className="mt-4 text-lg text-foreground/60">
-              Join the community building a future where every transaction
-              contributes to the pursuit of happiness for all.
+            <p className="mt-6 text-lg text-foreground/60">
+              Join the community building a future where every transaction saves lives,
+              funds science, and pushes humanity forward. The pursuit of happiness
+              starts with a single step.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
@@ -651,6 +889,13 @@ export default function Home() {
                 View Impact Dashboard
               </Link>
             </div>
+
+            {/* Disclaimer */}
+            <p className="mt-12 text-xs text-foreground/30 max-w-xl mx-auto">
+              POH is a utility token on the Base network. This is not financial advice
+              and not an investment solicitation. Smart contracts are unaudited &mdash;
+              participate at your own risk. Always do your own research.
+            </p>
           </div>
         </FadeIn>
       </section>

@@ -241,7 +241,7 @@ body::after {
   100% { background-position: 200% center; }
 }
 
-/* ── Voyager drift animation ── */
+/* ── Voyager drift animation (legacy, kept for fallback) ── */
 @keyframes voyager-drift {
   0% { transform: translateX(-100px) translateY(0); }
   25% { transform: translateX(25vw) translateY(-15px); }
@@ -252,6 +252,50 @@ body::after {
 
 .voyager-drift {
   animation: voyager-drift 60s linear infinite;
+}
+
+/* ── Section reveal animation ── */
+@keyframes section-reveal {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Glow pulse for mission section ── */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 40px -10px rgba(16, 185, 129, 0.3); }
+  50% { box-shadow: 0 0 60px -10px rgba(16, 185, 129, 0.5); }
+}
+
+.glow-pulse-green {
+  animation: glow-pulse 4s ease-in-out infinite;
+}
+
+/* ── Heartbeat animation for animal section ── */
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.15); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.1); }
+  56% { transform: scale(1); }
+}
+
+.animate-heartbeat {
+  animation: heartbeat 2s ease-in-out infinite;
+}
+
+/* ── Soft float for mission cards ── */
+@keyframes soft-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-soft-float {
+  animation: soft-float 6s ease-in-out infinite;
+}
+
+/* ── Number counter glow ── */
+.stat-glow {
+  text-shadow: 0 0 30px rgba(245, 158, 11, 0.3), 0 0 60px rgba(245, 158, 11, 0.1);
 }
 
 /* ── Step connector line animation ── */

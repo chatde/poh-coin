@@ -7,3 +7,4 @@ coverage.json
 .env
 *.log
 .DS_Store
+.vercel

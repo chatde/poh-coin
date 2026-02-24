@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     // 2. Query all proofs for this epoch
     const { data: proofs } = await supabase
       .from("proofs")
-      .select("device_id, points_earned, tasks_completed, quality_verified, streak_days")
+      .select("device_id, points_earned, tasks_completed, quality_verified")
       .eq("epoch", epoch.epoch_number);
 
     if (!proofs || proofs.length === 0) {
@@ -92,17 +92,15 @@ export async function POST(req: NextRequest) {
       rawPoints: number;
       tasksCompleted: number;
       qualityVerified: number;
-      maxStreak: number;
     }>();
 
     for (const proof of proofs) {
       const existing = deviceMap.get(proof.device_id) || {
-        rawPoints: 0, tasksCompleted: 0, qualityVerified: 0, maxStreak: 0,
+        rawPoints: 0, tasksCompleted: 0, qualityVerified: 0,
       };
       existing.rawPoints += Number(proof.points_earned);
       existing.tasksCompleted += proof.tasks_completed;
       if (proof.quality_verified) existing.qualityVerified++;
-      existing.maxStreak = Math.max(existing.maxStreak, proof.streak_days);
       deviceMap.set(proof.device_id, existing);
     }
 
@@ -146,6 +144,15 @@ export async function POST(req: NextRequest) {
     // 7. Build per-device points with all bonuses
     const devicePoints: DevicePoints[] = [];
 
+    // Look up streak data for all wallets that have active devices
+    const walletAddresses = [...new Set(nodes.map((n) => n.wallet_address))];
+    const { data: streakRows } = await supabase
+      .from("streaks")
+      .select("wallet_address, current_streak")
+      .in("wallet_address", walletAddresses);
+    const streakMap = new Map<string, number>();
+    streakRows?.forEach((s) => streakMap.set(s.wallet_address, s.current_streak || 0));
+
     for (const node of nodes) {
       const stats = deviceMap.get(node.device_id);
       if (!stats) continue;
@@ -161,29 +168,60 @@ export async function POST(req: NextRequest) {
         rawPoints: stats.rawPoints,
         tasksCompleted: stats.tasksCompleted,
         qualityVerified: stats.qualityVerified,
-        streakDays: stats.maxStreak,
+        streakDays: streakMap.get(node.wallet_address) || 0,
         isStaked: stakedValidators.has(node.wallet_address),
       });
     }
 
-    // 7b. Sync Folding@Home contributions and compute bonuses
+    // 7b. Include verified fitness effort scores as bonus points per wallet
+    const fitnessEffortMap = new Map<string, number>();
+    const epochStart = epoch.start_date;
+    const epochEnd = epoch.end_date;
+    const { data: fitnessActivities } = await supabase
+      .from("fitness_activities")
+      .select("wallet_address, effort_score")
+      .eq("verified", true)
+      .gte("submitted_at", `${epochStart}T00:00:00Z`)
+      .lte("submitted_at", `${epochEnd}T23:59:59Z`);
+
+    if (fitnessActivities) {
+      for (const activity of fitnessActivities) {
+        const current = fitnessEffortMap.get(activity.wallet_address) || 0;
+        fitnessEffortMap.set(activity.wallet_address, current + (activity.effort_score || 0));
+      }
+    }
+
+    // 7c. Sync Folding@Home contributions and compute bonuses
     const fahSync = await syncFahContributions();
 
-    // Build a map of F@H bonus points per wallet
+    // Build a map of F@H bonus points per wallet (delta WUs this epoch only)
     const fahBonusMap = new Map<string, number>();
-    if (fahSync.synced > 0) {
+    if (fahSync.synced > 0 && fahSync.totalDeltaWUs > 0) {
       const { data: fahLinks } = await supabase
         .from("fah_links")
-        .select("wallet_address, fah_wus")
+        .select("wallet_address, fah_wus, previous_epoch_wus")
         .eq("verified", true);
 
       if (fahLinks) {
         for (const link of fahLinks) {
-          // Calculate bonus from WUs completed (tracked via delta in syncFahContributions)
-          const bonus = calculateFahBonus(link.fah_wus || 0);
+          // Calculate bonus from delta WUs this epoch, not total all-time WUs
+          const previousWUs = link.previous_epoch_wus || 0;
+          const deltaWUs = Math.max(0, (link.fah_wus || 0) - previousWUs);
+          const bonus = calculateFahBonus(deltaWUs);
           if (bonus > 0) {
             fahBonusMap.set(link.wallet_address, bonus);
           }
+        }
+      }
+
+      // Snapshot current WUs for next epoch's delta calculation
+      if (fahLinks) {
+        for (const link of fahLinks) {
+          await supabase
+            .from("fah_links")
+            .update({ previous_epoch_wus: link.fah_wus || 0 })
+            .eq("wallet_address", link.wallet_address)
+            .eq("verified", true);
         }
       }
     }
@@ -278,6 +316,15 @@ export async function POST(req: NextRequest) {
       const fahBonus = fahBonusMap.get(dp.walletAddress) || 0;
       if (fahBonus > 0) {
         points += fahBonus;
+      }
+
+      // J. Verified fitness effort points
+      const fitnessEffort = fitnessEffortMap.get(dp.walletAddress) || 0;
+      if (fitnessEffort > 0) {
+        // Fitness effort scores translate directly to bonus points
+        // Spread across wallet's devices (avoid double-counting)
+        const walletDeviceCount = (walletDevices.get(dp.walletAddress) || []).length;
+        points += fitnessEffort / walletDeviceCount;
       }
 
       adjustedPoints.set(dp.deviceId, points);
@@ -409,12 +456,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 15. Advance trust weeks for all nodes
-    await supabase
-      .from("nodes")
-      .update({ trust_week: Math.min(4, epoch.epoch_number + 1) })
-      .in("device_id", deviceIds)
-      .lt("trust_week", 4);
+    // 15. Advance trust weeks for all nodes based on registration date
+    for (const node of nodes) {
+      if (node.trust_week >= 4) continue;
+      const regDate = new Date(node.registered_at);
+      const weeksActive = Math.floor((Date.now() - regDate.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+      const newTrustWeek = Math.min(4, weeksActive);
+      if (newTrustWeek > node.trust_week) {
+        await supabase
+          .from("nodes")
+          .update({ trust_week: newTrustWeek })
+          .eq("device_id", node.device_id);
+      }
+    }
 
     // 16. Create next epoch
     const nextStart = new Date(epoch.end_date);

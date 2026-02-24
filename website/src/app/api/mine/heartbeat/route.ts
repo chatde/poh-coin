@@ -72,9 +72,9 @@ export async function POST(req: NextRequest) {
 
     // Determine compute status based on battery/temperature
     let computeStatus = "active";
-    if (temperatureC && temperatureC >= STOP_TEMP_C) {
+    if (temperatureC != null && temperatureC >= STOP_TEMP_C) {
       computeStatus = "stopped";
-    } else if (temperatureC && temperatureC >= THROTTLE_TEMP_C) {
+    } else if (temperatureC != null && temperatureC >= THROTTLE_TEMP_C) {
       computeStatus = "throttled";
     }
 
@@ -83,10 +83,10 @@ export async function POST(req: NextRequest) {
       .from("heartbeats")
       .update({
         response,
-        battery_pct: batteryPct || null,
-        temperature_c: temperatureC || null,
+        battery_pct: batteryPct ?? null,
+        temperature_c: temperatureC ?? null,
         compute_status: computeStatus,
-        memory_usage_mb: memoryUsageMb || null,
+        memory_usage_mb: memoryUsageMb ?? null,
         worker_active: workerActive ?? null,
       })
       .eq("id", pending.id);
