@@ -117,20 +117,6 @@ export function useCompute(deviceId: string | null) {
     };
   }, [deviceId]);
 
-  // Auto-resume mining if was mining before (page refresh)
-  useEffect(() => {
-    const wasMining = localStorage.getItem("poh-was-mining") === "true";
-    if (wasMining && deviceId && !isMiningRef.current) {
-      const timer = setTimeout(() => {
-        isMiningRef.current = true;
-        setIsMining(true);
-        setState((s) => ({ ...s, status: "loading", error: null, progressStep: "Resuming mining after refresh..." }));
-        runMiningLoop();
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [deviceId]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const fetchTask = useCallback(async (): Promise<Task | null> => {
     if (!deviceId) return null;
     const controller = new AbortController();
@@ -282,6 +268,20 @@ export function useCompute(deviceId: string | null) {
       await new Promise((r) => setTimeout(r, 1_000));
     }
   }, [deviceId, fetchTask, submitResult]);
+
+  // Auto-resume mining if was mining before (page refresh)
+  // Runs when deviceId changes — handles the case where deviceId loads
+  // from localStorage after the first render (common on mobile)
+  useEffect(() => {
+    if (!deviceId || isMiningRef.current) return;
+    const wasMining = localStorage.getItem("poh-was-mining") === "true";
+    if (!wasMining) return;
+
+    isMiningRef.current = true;
+    setIsMining(true);
+    setState((s) => ({ ...s, status: "loading", error: null, progressStep: "Resuming mining after refresh..." }));
+    runMiningLoop();
+  }, [deviceId, runMiningLoop]);
 
   const startMining = useCallback(() => {
     if (isMiningRef.current) return;

@@ -787,10 +787,10 @@ export default function Home() {
 
           <div className="mt-10 text-center">
             <Link
-              href="/whitepaper"
+              href="/tokenomics"
               className="inline-flex items-center gap-1 text-sm font-medium text-accent-light transition-colors hover:text-accent"
             >
-              Full tokenomics in the whitepaper
+              Full emission schedule & sustainability math
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
