@@ -9,3 +9,8 @@ coverage.json
 .DS_Store
 .vercel
 .claude/
+MILESTONES.md
+BUDGET.md
+DEPLOYMENT_CHECKLIST.md
+scripts/test-send.js
+scripts/transfer-to-ledger.js

@@ -130,7 +130,7 @@ export default function SchoolsPage() {
           Contact us to register your school for the Proof of Planet program.
         </p>
         <a
-          href="mailto:schools@pursuitofhappiness.com?subject=Schools Program Registration"
+          href="mailto:contact@projectpoh.com?subject=Schools Program Registration"
           className="inline-block bg-charity-green text-white font-bold py-3 px-8 rounded-lg hover:opacity-90 transition-opacity"
         >
           Register Your School
