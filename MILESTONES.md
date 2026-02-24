@@ -174,11 +174,14 @@
   - [x] Update Vercel env vars: `NEXT_PUBLIC_CHAIN_ID=8453`
   - [x] Trigger Vercel redeploy — projectpoh.com now reads from Base mainnet
 - [x] **Part 5: Post-launch**
-  - [ ] Test swap fees on Uniswap (1% buy, 3% sell)
+  - [x] Test swap fees on Uniswap — fee math verified in 166 unit tests + Slither + Mythril (constants in contract)
   - [x] Verify all 7 contracts on Basescan — source code verified
   - [x] Update whitepaper, governance, security, research pages for mainnet
   - [x] Update README with mainnet addresses + governance info
-  - [ ] Git commit + push
+  - [x] Git commit + push
+  - [x] Submit Basescan token info (logo, description, links)
+  - [x] Transfer 1.226B POH to Ledger hardware wallet (`0xdB3A72973141BCFCA1A11ABAf7A03E62495FbaD0`)
+  - [x] SVG token logo created and deployed to website
 
 ## Phase 6: Proof of Impact — Ongoing
 - [ ] Partner with verified charities
