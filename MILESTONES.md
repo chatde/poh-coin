@@ -171,8 +171,8 @@
   - [x] Pool: `0x29A160A9C535F1460146d7DF19d49f9ae1eb2FbD` (LP NFT #4689781)
 - [x] **Part 4: Website go-live**
   - [x] Filled `MAINNET_CONTRACTS` in `website/src/lib/contracts.ts`
-  - [ ] Update Vercel env vars: `NEXT_PUBLIC_CHAIN_ID=8453`
-  - [ ] Trigger Vercel redeploy, verify mainnet data on all pages
+  - [x] Update Vercel env vars: `NEXT_PUBLIC_CHAIN_ID=8453`
+  - [x] Trigger Vercel redeploy — projectpoh.com now reads from Base mainnet
 - [x] **Part 5: Post-launch**
   - [ ] Test swap fees on Uniswap (1% buy, 3% sell)
   - [x] Verify all 7 contracts on Basescan — source code verified
