@@ -7,7 +7,7 @@ import type { FitnessConnection } from "@/lib/fitness-data";
 /**
  * POST /api/mine/fitness/sync
  *
- * Pull latest activities from Strava/Fitbit, compute effort scores, store in DB.
+ * Pull latest activities from Strava, compute effort scores, store in DB.
  * Rate limited: max 10 syncs/wallet/hour.
  */
 export async function POST(req: NextRequest) {

@@ -33,12 +33,10 @@ describe('API Security Patterns', () => {
 
     it('should have provider client IDs', () => {
       expect(process.env.STRAVA_CLIENT_ID).toBeDefined();
-      expect(process.env.FITBIT_CLIENT_ID).toBeDefined();
     });
 
     it('should have provider client secrets', () => {
       expect(process.env.STRAVA_CLIENT_SECRET).toBeDefined();
-      expect(process.env.FITBIT_CLIENT_SECRET).toBeDefined();
     });
   });
 

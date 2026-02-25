@@ -57,7 +57,7 @@ export default function FitnessPanel({
         <div className="space-y-2">
           <div className="text-green-700 text-xs">
             Connect a wearable to earn POH through physical activity.
-            Supports Strava and Fitbit. Apple Health syncs via Strava.
+            Supports Strava. Apple Health syncs via the Strava app.
           </div>
           <button
             onClick={onConnect}

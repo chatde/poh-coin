@@ -31,7 +31,7 @@ export default function SetupPage() {
   const [seedConfirmed, setSeedConfirmed] = useState(false);
   const [seedCopied, setSeedCopied] = useState(false);
 
-  // Handle OAuth redirect-back (after Strava/Fitbit authorization)
+  // Handle OAuth redirect-back (after Strava authorization)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const fitnessResult = params.get("fitness");
@@ -272,9 +272,12 @@ export default function SetupPage() {
     }
   }, [deviceId, walletAddress, generateFingerprint, ethersWallet, walletMethod]);
 
-  // Step 3: Connect wearable via OAuth (Strava or Fitbit)
+  // Step 3: Connect wearable via OAuth (Strava)
   const handleConnectProvider = useCallback(async (provider: string) => {
-    if (!walletAddress || !deviceId) return;
+    if (!walletAddress || !deviceId) {
+      setError("Wallet or device not found. Please complete setup from the beginning.");
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -285,19 +288,24 @@ export default function SetupPage() {
         body: JSON.stringify({ walletAddress, deviceId, provider }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
         setError(data.error || "Failed to start wearable connection.");
         setLoading(false);
         return;
       }
 
-      const { authUrl } = await res.json();
+      if (!data.authUrl) {
+        setError("No authorization URL returned. Strava may not be configured yet.");
+        setLoading(false);
+        return;
+      }
 
       // Full page redirect to OAuth provider
-      window.location.href = authUrl;
+      window.location.href = data.authUrl;
     } catch {
-      setError("Failed to connect wearable.");
+      setError("Failed to connect wearable. Please check your connection and try again.");
       setLoading(false);
     }
   }, [walletAddress, deviceId]);
@@ -606,16 +614,6 @@ export default function SetupPage() {
                     </div>
                   </button>
 
-                  <button
-                    onClick={() => handleConnectProvider("fitbit")}
-                    disabled={loading}
-                    className="w-full border border-green-600 text-green-400 py-3 px-4 rounded font-mono text-sm hover:bg-green-900/30 transition-colors text-left"
-                  >
-                    <div className="font-bold">[2] FITBIT</div>
-                    <div className="text-green-700 text-xs mt-1">
-                      Fitbit wearables with heart rate tracking.
-                    </div>
-                  </button>
                 </div>
               )}
 
@@ -765,7 +763,7 @@ export default function SetupPage() {
               {!fitnessProvider && (
                 <div className="border border-green-700 rounded p-3 mt-2">
                   <div className="text-green-600 text-xs mb-2">
-                    Earn more POH — connect <span className="text-green-400">Strava</span> or <span className="text-green-400">Fitbit</span> to
+                    Earn more POH — connect <span className="text-green-400">Strava</span> to
                     mine with your workouts too
                   </div>
                   <div className="flex gap-2">
@@ -775,13 +773,6 @@ export default function SetupPage() {
                       className="flex-1 border border-green-600 text-green-400 py-2 px-3 rounded font-mono text-xs hover:bg-green-900/30 transition-colors"
                     >
                       STRAVA
-                    </button>
-                    <button
-                      onClick={() => handleConnectProvider("fitbit")}
-                      disabled={loading}
-                      className="flex-1 border border-green-600 text-green-400 py-2 px-3 rounded font-mono text-xs hover:bg-green-900/30 transition-colors"
-                    >
-                      FITBIT
                     </button>
                   </div>
                   <div className="text-green-900 text-xs mt-1">

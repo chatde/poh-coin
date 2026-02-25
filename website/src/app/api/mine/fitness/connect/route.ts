@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     const fitnessProvider = getProvider(provider);
     if (!fitnessProvider) {
       return NextResponse.json(
-        { error: "Unsupported provider. Use 'strava' or 'fitbit'." },
+        { error: "Unsupported provider. Use 'strava'." },
         { status: 400 },
       );
     }

@@ -1,11 +1,11 @@
 /**
- * Fitness Data Pipeline — Direct Strava + Fitbit Integration
+ * Fitness Data Pipeline — Strava Integration
  *
- * Connects wearables via OAuth 2.0 directly to Strava and Fitbit APIs.
+ * Connects wearables via OAuth 2.0 directly to the Strava API.
  * Computes Effort Scores for fitness mining rewards.
  *
  * Strava: runs, rides, swims, yoga — Apple Health syncs via Strava app
- * Fitbit: Fitbit wearable users with heart rate tracking
+ * Fitbit: provider code retained but disabled (not registered in provider map)
  */
 
 import { supabase } from "@/lib/supabase";
@@ -515,7 +515,7 @@ const fitbitProvider: FitnessProvider = {
 
 const providers: Record<string, FitnessProvider> = {
   strava: stravaProvider,
-  fitbit: fitbitProvider,
+  // fitbit: fitbitProvider,  // Disabled — re-enable when Fitbit OAuth credentials are configured
 };
 
 export function getProvider(name: string): FitnessProvider | null {

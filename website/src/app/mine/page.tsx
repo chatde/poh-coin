@@ -148,7 +148,7 @@ export default function MinePage() {
       {!fitness.connected && (
         <div className="border border-green-700 rounded p-3 mb-4 flex items-center justify-between gap-3">
           <div className="text-green-600 text-xs">
-            Earn more POH — connect <span className="text-green-400">Strava</span> or <span className="text-green-400">Fitbit</span> to mine with your workouts
+            Earn more POH — connect <span className="text-green-400">Strava</span> to mine with your workouts
           </div>
           <button
             onClick={handleConnectWearable}

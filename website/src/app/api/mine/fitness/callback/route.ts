@@ -4,7 +4,7 @@ import { verifyOAuthState, getProvider, storeConnection } from "@/lib/fitness-da
 /**
  * GET /api/mine/fitness/callback
  *
- * OAuth callback handler. Strava and Fitbit redirect here after user authorizes.
+ * OAuth callback handler. Strava redirects here after user authorizes.
  * Query params: code, state (format: "provider.hmacSignedPayload")
  *
  * 1. Parse provider from state prefix
