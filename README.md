@@ -1,33 +1,52 @@
 # Project POH — Pursuit of Happiness Coin
 
-A charity ERC20 token on Base with tokenomics tied to Voyager 1's journey through interstellar space. Includes the "Proof of Planet" phone mining system that lets anyone contribute compute to scientific research and earn POH tokens.
+A charity ERC20 token on Base where **Voyager 1's real-time distance IS the expanding supply**. As the probe flies further from the Sun, more POH becomes available to mine. When Voyager dies, the supply freezes forever. Includes the "Proof of Planet" phone mining system — dual Web Workers running scientific compute + SHA-256 block equations in parallel.
 
 ## Mission
 
-Change the trajectory of humankind by creating the most trusted charity crypto ecosystem on the planet. Every transaction funds environmental, humanitarian, educational, and health causes.
+Change the trajectory of humankind by creating the most trusted charity crypto ecosystem on the planet. Every transaction funds environmental, humanitarian, educational, and health causes. When Voyager goes silent, remaining POH becomes the **Voyager Chase Fund** — a DAO-governed treasury to fund interstellar research.
 
 ## Live
 
 - **Website**: [projectpoh.com](https://projectpoh.com)
 - **Whitepaper**: [projectpoh.com/whitepaper](https://projectpoh.com/whitepaper)
 - **Mine**: [projectpoh.com/mine](https://projectpoh.com/mine)
+- **Block Explorer**: [projectpoh.com/blocks](https://projectpoh.com/blocks)
+- **Tokenomics**: [projectpoh.com/tokenomics](https://projectpoh.com/tokenomics)
 - **Impact Dashboard**: [projectpoh.com/impact](https://projectpoh.com/impact)
 - **Leaderboard**: [projectpoh.com/leaderboard](https://projectpoh.com/leaderboard)
 
-## Tokenomics (Voyager Model)
+## The Voyager Block Model
 
 | Parameter | Value |
 |-----------|-------|
-| Max Supply | 24,526,000,000 (Voyager 1 distance in km) |
+| Launch Supply | 24,526,000,000 (Voyager's distance at launch, in km) |
+| Block Size | 1,000 km of Voyager travel |
+| Blocks/Day | ~1,459 (Voyager speed: 16.88 km/s) |
+| Tasks/Block | 20 (early) → 200 (at scale) |
+| Year 1 Block Reward | ~1,009 POH |
+| RTG Decay | 5% annual reduction |
+| Max Distributable | ~10.72B POH (from 12.26B rewards pool) |
+| Permanently Locked | ~1.54B POH (Voyager Chase Fund seed) |
 | Buy Fee | 1% (0.5% charity + 0.5% liquidity) |
 | Sell Fee | 3% (1.5% charity + 1% burn + 0.5% liquidity) |
 | Transfer Fee | 0.5% (charity) |
 | Max Wallet | 2% of supply |
-| Max Transaction | 1% of supply |
+
+## How Mining Works
+
+1. Your phone runs **two parallel Web Workers**:
+   - **Science Worker**: Protein folding, climate modeling, seismic analysis, drug screening
+   - **Block Equation Worker**: SHA-256 proof-of-work (WASM via hash-wasm)
+2. Complete N verified tasks + solve the block equation = **mine a block**
+3. Block reward split: 60% equation solver, 30% task contributors, 10% F@H/BOINC bonus
+4. Weekly epochs distribute POH via merkle proofs on-chain
+5. Rewards decay at 5%/year (matching Voyager's RTG power loss)
+6. When Voyager is decommissioned: blocks stop, remaining POH locked forever
 
 ## Supply Allocation
 
-- 50% Community Rewards (Proof of Planet mining, released over 10+ years)
+- 50% Community Rewards (block mining, RTG decay over 10+ years)
 - 20% Charity Treasury (timelocked, governed by founder then DAO)
 - 15% Liquidity Pool (Uniswap on Base)
 - 10% Founder (4-year vesting, 6-month cliff)
@@ -49,29 +68,21 @@ All contracts built on OpenZeppelin v5.4.0, Solidity 0.8.24, EVM version Cancun.
 
 ## Proof of Planet — Phone Mining
 
-Mine POH with your phone by contributing compute power to scientific research:
+Mine POH blocks by contributing dual compute power:
 
-- **Protein Folding** — Ubiquitin (Parkinson's), Crambin (Drug Design), Ribonuclease (Cancer)
-- **Climate Modeling** — Arctic Ice Melt, Pacific Ocean Heat Transport, Urban Heat Islands
-- **Seismic Analysis** — Earthquake Early Warning (Noto Japan, Turkey-Syria, Cascadia)
-- **Drug Screening** — Virtual docking against cancer-related targets (EGFR, BRAF, HER2)
-
-### How It Works
-
-1. Visit [projectpoh.com/mine/setup](https://projectpoh.com/mine/setup) and create a wallet
-2. Your phone runs scientific compute tasks in the background
-3. Results are verified by 2-of-3 redundant computation
-4. Earn points based on compute contribution
-5. Weekly epoch close calculates your POH share
-6. Claim tokens via merkle proof on-chain
+- **Science Tasks**: Protein folding, climate modeling, seismic analysis, drug screening
+- **Block Equations**: SHA-256 proof-of-work via WASM (adaptive difficulty: 5-10 min solve time)
+- **F@H Integration**: Folding@home team bonus (team 1000001)
+- **BOINC Integration**: Link your CPID for Rosetta@home, Einstein@Home, Climateprediction.net, World Community Grid
 
 ### Mining Features
 
-- Wake Lock keeps mining active overnight
-- Auto-resumes on page refresh
+- Dual Web Workers running in parallel (science + PoW)
+- Wake Lock keeps mining active
 - Battery safety: throttle at 40C, stop at 45C
-- 15-minute heartbeat with challenge-response verification
-- Real science datasets from PDB, NOAA, and USGS
+- Adaptive tasks/block: 20 (early network) → 200 (at scale)
+- Block progress tracking with equation hash rate display
+- WASM SHA-256 (hash-wasm) for mobile-optimized hashing
 
 ## Mainnet Deployment (Base)
 
@@ -116,9 +127,10 @@ All contracts verified on [Basescan](https://basescan.org). ENS: `projectpoh.eth
 
 - **Blockchain**: Base (Coinbase L2)
 - **Contracts**: Solidity 0.8.24, Hardhat, OpenZeppelin v5
-- **Frontend**: Next.js 15, React, Tailwind CSS
+- **Frontend**: Next.js 16, React 19, Tailwind CSS 4, Framer Motion
 - **Backend**: Vercel Serverless, Supabase (PostgreSQL)
-- **Mining**: Web Workers, PWA with service worker
+- **Mining**: Dual Web Workers (science + PoW), PWA, hash-wasm (WASM SHA-256)
+- **Block System**: Voyager distance → block height, RTG decay rewards
 
 ## Development
 

@@ -8,6 +8,48 @@ export const WEEKS_PER_YEAR = 52;
 // Launch date — testnet launch
 export const LAUNCH_DATE = new Date("2026-02-21T00:00:00Z");
 
+// ── Voyager Block System ───────────────────────────────────────────────
+
+/** 1 block = 1,000 km of Voyager travel beyond launch distance */
+export const BLOCK_SIZE_KM = 1_000;
+
+/** Minimum tasks required per block (early network) */
+export const TASKS_PER_BLOCK_MIN = 20;
+
+/** Maximum tasks required per block (at scale, 1000+ miners) */
+export const TASKS_PER_BLOCK_MAX = 200;
+
+/** Voyager 1 distance at token launch — the fixed initial supply in km */
+export const VOYAGER_LAUNCH_KM = 24_526_000_000;
+
+/** Reference epoch: Jan 1, 2026 00:00:00 UTC (Unix seconds) */
+export const VOYAGER_REF_EPOCH = 1_735_689_600;
+
+/** Voyager 1 distance at reference epoch (km from Sun) */
+export const VOYAGER_REF_KM = 25_316_070_000;
+
+/** Voyager 1 velocity in km/day */
+export const VOYAGER_VELOCITY_KM_DAY = 1_458_648;
+
+/** Expected blocks per day (~1,459) */
+export const BLOCKS_PER_DAY = Math.floor(VOYAGER_VELOCITY_KM_DAY / BLOCK_SIZE_KM);
+
+/** Expected blocks per week (~10,213) */
+export const BLOCKS_PER_WEEK = BLOCKS_PER_DAY * 7;
+
+/** Year 1 total block emission budget (POH) */
+export const YEAR_1_EMISSION = STARTING_ANNUAL_EMISSION;
+
+/** Block reward distribution splits */
+export const BLOCK_REWARD_SPLIT = {
+  /** Miner who solved the block equation */
+  EQUATION_SOLVER: 0.60,
+  /** Distributed among compute task contributors */
+  TASK_CONTRIBUTORS: 0.30,
+  /** F@H + BOINC bonus pool */
+  SCIENCE_BONUS: 0.10,
+} as const;
+
 // Pool split
 export const DATA_NODE_SHARE = 0.80; // 80% to data nodes
 export const VALIDATOR_SHARE = 0.20; // 20% to validators

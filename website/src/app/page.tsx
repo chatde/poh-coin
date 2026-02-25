@@ -237,22 +237,22 @@ const steps = [
   },
   {
     icon: IconPickaxe,
-    title: "Mine",
-    description: "Contribute compute power to Folding@Home and earn through fitness tracking.",
+    title: "Mine Blocks",
+    description: "Solve science tasks + block equations in parallel. Every 1,000 km Voyager travels = 1 new block.",
     accent: "text-voyager-gold",
     bg: "bg-voyager-gold/10",
   },
   {
     icon: IconCoins,
-    title: "Earn",
-    description: "Receive POH rewards based on your mining contributions and activity.",
+    title: "Earn POH",
+    description: "Block rewards decay with Voyager's RTG. When Voyager goes silent, remaining POH locks forever.",
     accent: "text-charity-green",
     bg: "bg-charity-green/10",
   },
   {
     icon: IconSparkles,
-    title: "Impact",
-    description: "Your rewards fund real science, charity, and animal rescue automatically.",
+    title: "Fund the Future",
+    description: "Your blocks fund real science, animal rescue, and the Voyager Chase Fund — humanity's interstellar mission.",
     accent: "text-accent-light",
     bg: "bg-accent/10",
   },
@@ -557,9 +557,9 @@ export default function Home() {
                     </div>
                     <h3 className="text-xl font-bold">Mine With Your Phone</h3>
                     <p className="mt-3 max-w-md text-sm leading-relaxed text-foreground/60">
-                      No expensive rigs. Contribute compute power to Folding@Home
-                      protein research and earn POH through fitness tracking.
-                      Your phone becomes an instrument of scientific discovery.
+                      No expensive rigs. Two Web Workers run in parallel — science
+                      tasks and block equations. Your phone mines Voyager blocks
+                      while solving real protein folding problems.
                     </p>
                   </div>
                   <Link
@@ -698,9 +698,9 @@ export default function Home() {
                 Voyager Tokenomics
               </p>
               <p className="mx-auto mt-4 max-w-2xl text-foreground/60">
-                The total supply of POH is permanently tied to Voyager&nbsp;1&rsquo;s
-                distance from the Sun, measured in kilometers. As Voyager drifts deeper
-                into interstellar space, the max supply grows with it.
+                24.526B POH minted at launch — Voyager&nbsp;1&rsquo;s distance in km.
+                Every 1,000&nbsp;km beyond that = 1 new block to mine. Block rewards
+                decay 5% annually. When Voyager goes silent, blocks stop forever.
               </p>
             </div>
           </FadeIn>

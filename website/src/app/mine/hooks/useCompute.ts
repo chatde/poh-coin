@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getTaskDisplayName } from "@/lib/science-data";
 import { createClient } from "@supabase/supabase-js";
+import { getBlockHeight, getBlockReward } from "@/lib/voyager-block";
+import { TASKS_PER_BLOCK_MIN } from "@/lib/constants";
 
 interface Task {
   task_id: string;
@@ -24,14 +26,41 @@ interface ComputeState {
   error: string | null;
 }
 
+/** Block equation worker state */
+export interface BlockState {
+  /** Tasks completed toward current block */
+  blockTasksCompleted: number;
+  /** Tasks required for current block (adaptive) */
+  tasksPerBlock: number;
+  /** Whether the block equation has been solved */
+  equationSolved: boolean;
+  /** Current hash rate from the equation worker (hashes/sec) */
+  equationHashRate: number;
+  /** Total blocks mined this session */
+  blocksMined: number;
+  /** Current block height from Voyager distance */
+  currentBlockHeight: number;
+  /** Current block reward in POH */
+  currentBlockReward: number;
+  /** Equation worker difficulty (leading hex zeros) */
+  equationDifficulty: number;
+}
+
 // Persistence keys
 const PERSIST_KEY = "poh-mining-state";
+const BLOCK_PERSIST_KEY = "poh-block-state";
 
-function loadPersistedState(): Partial<ComputeState> {
+interface PersistedState {
+  tasksCompleted: number;
+  totalComputeMs: number;
+  blocksMined: number;
+}
+
+function loadPersistedState(): Partial<ComputeState> & { blocksMined?: number } {
   try {
     const stored = localStorage.getItem(PERSIST_KEY);
     if (stored) {
-      const parsed = JSON.parse(stored);
+      const parsed = JSON.parse(stored) as PersistedState;
       return {
         tasksCompleted: parsed.tasksCompleted || 0,
         totalComputeMs: parsed.totalComputeMs || 0,
@@ -41,9 +70,26 @@ function loadPersistedState(): Partial<ComputeState> {
   return {};
 }
 
+function loadBlockState(): { blocksMined: number } {
+  try {
+    const stored = localStorage.getItem(BLOCK_PERSIST_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as { blocksMined: number };
+      return { blocksMined: parsed.blocksMined || 0 };
+    }
+  } catch {}
+  return { blocksMined: 0 };
+}
+
 function persistState(state: { tasksCompleted: number; totalComputeMs: number }) {
   try {
     localStorage.setItem(PERSIST_KEY, JSON.stringify(state));
+  } catch {}
+}
+
+function persistBlockState(blocksMined: number) {
+  try {
+    localStorage.setItem(BLOCK_PERSIST_KEY, JSON.stringify({ blocksMined }));
   } catch {}
 }
 
@@ -58,6 +104,7 @@ function getRealtimeClient() {
 
 export function useCompute(deviceId: string | null) {
   const persisted = loadPersistedState();
+  const blockPersisted = loadBlockState();
   const [state, setState] = useState<ComputeState>({
     status: "idle",
     currentTask: null,
@@ -68,10 +115,24 @@ export function useCompute(deviceId: string | null) {
     error: null,
   });
 
+  const [blockState, setBlockState] = useState<BlockState>({
+    blockTasksCompleted: 0,
+    tasksPerBlock: TASKS_PER_BLOCK_MIN,
+    equationSolved: false,
+    equationHashRate: 0,
+    blocksMined: blockPersisted.blocksMined,
+    currentBlockHeight: getBlockHeight(),
+    currentBlockReward: getBlockReward(),
+    equationDifficulty: 6,
+  });
+
   const [isMining, setIsMining] = useState(false);
   const workerRef = useRef<Worker | null>(null);
+  const equationWorkerRef = useRef<Worker | null>(null);
   const isMiningRef = useRef(false);
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
+  const blockTasksRef = useRef(0);
+  const equationSolvedRef = useRef(false);
 
   // Persist stats whenever they change
   useEffect(() => {
@@ -80,6 +141,105 @@ export function useCompute(deviceId: string | null) {
       totalComputeMs: state.totalComputeMs,
     });
   }, [state.tasksCompleted, state.totalComputeMs]);
+
+  // Persist block state
+  useEffect(() => {
+    persistBlockState(blockState.blocksMined);
+  }, [blockState.blocksMined]);
+
+  // Update block height and reward periodically
+  useEffect(() => {
+    const update = () => {
+      setBlockState((s) => ({
+        ...s,
+        currentBlockHeight: getBlockHeight(),
+        currentBlockReward: getBlockReward(),
+      }));
+    };
+    update();
+    const id = setInterval(update, 60_000); // every minute
+    return () => clearInterval(id);
+  }, []);
+
+  // Start/stop equation worker when mining state changes
+  const startEquationWorker = useCallback(() => {
+    if (!deviceId || equationWorkerRef.current) return;
+
+    equationWorkerRef.current = new Worker(
+      new URL("../workers/block-equation.worker.ts", import.meta.url)
+    );
+
+    const worker = equationWorkerRef.current;
+
+    worker.addEventListener("message", (event: MessageEvent) => {
+      const msg = event.data;
+
+      if (msg.type === "calibrated") {
+        setBlockState((s) => ({ ...s, equationDifficulty: msg.difficulty }));
+        // Start mining with calibrated difficulty
+        worker.postMessage({
+          type: "start",
+          blockHeight: getBlockHeight(),
+          deviceId,
+          difficulty: msg.difficulty,
+        });
+      } else if (msg.type === "progress") {
+        setBlockState((s) => ({ ...s, equationHashRate: msg.hashRate }));
+      } else if (msg.type === "solved") {
+        equationSolvedRef.current = true;
+        setBlockState((s) => ({
+          ...s,
+          equationSolved: true,
+          equationHashRate: msg.hashRate,
+        }));
+        // Check if block is complete (tasks + equation both done)
+        checkBlockComplete();
+      }
+    });
+
+    // Calibrate first, then start
+    worker.postMessage({ type: "calibrate", deviceId });
+  }, [deviceId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const stopEquationWorker = useCallback(() => {
+    if (equationWorkerRef.current) {
+      equationWorkerRef.current.postMessage({ type: "stop" });
+      equationWorkerRef.current.terminate();
+      equationWorkerRef.current = null;
+    }
+    equationSolvedRef.current = false;
+    setBlockState((s) => ({
+      ...s,
+      equationSolved: false,
+      equationHashRate: 0,
+    }));
+  }, []);
+
+  // Check if a block is complete (both tasks and equation solved)
+  const checkBlockComplete = useCallback(() => {
+    const tasksNeeded = TASKS_PER_BLOCK_MIN; // TODO: use adaptive from server
+    if (blockTasksRef.current >= tasksNeeded && equationSolvedRef.current) {
+      // Block mined!
+      setBlockState((s) => ({
+        ...s,
+        blocksMined: s.blocksMined + 1,
+        blockTasksCompleted: 0,
+        equationSolved: false,
+      }));
+      blockTasksRef.current = 0;
+      equationSolvedRef.current = false;
+
+      // Start next block equation
+      if (equationWorkerRef.current && deviceId) {
+        equationWorkerRef.current.postMessage({
+          type: "start",
+          blockHeight: getBlockHeight(),
+          deviceId,
+          difficulty: blockState.equationDifficulty,
+        });
+      }
+    }
+  }, [deviceId, blockState.equationDifficulty]);
 
   // Setup Supabase Realtime subscription for task assignments
   useEffect(() => {
@@ -264,6 +424,14 @@ export function useCompute(deviceId: string | null) {
         progressStep: "Verified! Requesting next task...",
       }));
 
+      // Track block progress
+      blockTasksRef.current += 1;
+      setBlockState((s) => ({
+        ...s,
+        blockTasksCompleted: blockTasksRef.current,
+      }));
+      checkBlockComplete();
+
       // Brief pause between tasks
       await new Promise((r) => setTimeout(r, 1_000));
     }
@@ -290,7 +458,8 @@ export function useCompute(deviceId: string | null) {
     localStorage.setItem("poh-was-mining", "true");
     setState((s) => ({ ...s, status: "loading", error: null }));
     runMiningLoop();
-  }, [runMiningLoop]);
+    startEquationWorker();
+  }, [runMiningLoop, startEquationWorker]);
 
   const stopMining = useCallback(() => {
     isMiningRef.current = false;
@@ -300,19 +469,22 @@ export function useCompute(deviceId: string | null) {
       workerRef.current.terminate();
       workerRef.current = null;
     }
+    stopEquationWorker();
     setState((s) => ({ ...s, status: "idle", progressStep: "Mining stopped." }));
-  }, []);
+  }, [stopEquationWorker]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       isMiningRef.current = false;
       workerRef.current?.terminate();
+      equationWorkerRef.current?.terminate();
     };
   }, []);
 
   return {
     ...state,
+    blockState,
     taskDisplayName: state.currentTask
       ? getTaskDisplayName(state.currentTask.task_type, state.currentTask.payload)
       : null,

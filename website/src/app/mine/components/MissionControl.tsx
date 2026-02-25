@@ -9,6 +9,7 @@ import {
   BlinkingCursor,
 } from "./Terminal";
 import { calculateWeeklyPool } from "@/lib/constants";
+import type { BlockState } from "../hooks/useCompute";
 
 interface MissionControlProps {
   status: "idle" | "loading" | "computing" | "submitting" | "error";
@@ -27,6 +28,7 @@ interface MissionControlProps {
   isMining: boolean;
   onStartMining: () => void;
   onStopMining: () => void;
+  blockState?: BlockState;
 }
 
 function formatEpoch(epoch: number): string {
@@ -57,6 +59,7 @@ export default function MissionControl({
   isMining,
   onStartMining,
   onStopMining,
+  blockState,
 }: MissionControlProps) {
   const [log, setLog] = useState<string[]>([]);
   const [uptime, setUptime] = useState(0);
@@ -167,6 +170,78 @@ export default function MissionControl({
               <div className="text-green-700 text-xs mt-1">{progressStep}</div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Voyager Block Progress */}
+      {blockState && (
+        <div className="border border-green-800 rounded p-3">
+          <div className="text-green-500 text-xs uppercase tracking-widest mb-2">
+            Voyager Block Mining
+          </div>
+          <TerminalStatus
+            label="BLOCK HEIGHT"
+            value={blockState.currentBlockHeight.toLocaleString()}
+          />
+          <TerminalStatus
+            label="BLOCK REWARD"
+            value={`${Math.round(blockState.currentBlockReward).toLocaleString()} POH`}
+            color="green"
+          />
+          <TerminalStatus
+            label="BLOCKS MINED"
+            value={blockState.blocksMined}
+            color="green"
+          />
+
+          {/* Task progress toward block */}
+          <div className="mt-2">
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-green-600">TASKS → BLOCK</span>
+              <span className="text-green-400">
+                {blockState.blockTasksCompleted}/{blockState.tasksPerBlock}
+              </span>
+            </div>
+            <div className="w-full bg-green-900/30 rounded-full h-2">
+              <div
+                className="bg-gradient-to-r from-green-600 to-green-400 h-2 rounded-full transition-all"
+                style={{
+                  width: `${Math.min(100, (blockState.blockTasksCompleted / blockState.tasksPerBlock) * 100)}%`,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Equation solver status */}
+          <div className="mt-2">
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-green-600">EQUATION</span>
+              <span className={blockState.equationSolved ? "text-green-400" : "text-yellow-400"}>
+                {blockState.equationSolved
+                  ? "SOLVED"
+                  : isMining
+                    ? `${blockState.equationHashRate.toLocaleString()} H/s`
+                    : "IDLE"}
+              </span>
+            </div>
+            <div className="w-full bg-green-900/30 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full transition-all ${
+                  blockState.equationSolved
+                    ? "bg-green-400 w-full"
+                    : isMining
+                      ? "bg-yellow-500/70 w-1/2 animate-pulse"
+                      : "w-0"
+                }`}
+              />
+            </div>
+          </div>
+
+          {/* Difficulty */}
+          <div className="mt-2 text-green-700 text-xs">
+            Difficulty: {blockState.equationDifficulty} leading zeros
+            {" | "}SHA-256 PoW (WASM)
+          </div>
         </div>
       )}
 

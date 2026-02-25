@@ -201,6 +201,7 @@ export default function MinePage() {
               isMining={compute.isMining}
               onStartMining={handleStartMining}
               onStopMining={handleStopMining}
+              blockState={compute.blockState}
             />
           )}
         </div>
@@ -249,6 +250,9 @@ export default function MinePage() {
               Navigation
             </div>
             <div className="space-y-1">
+              <a href="/blocks" className="block text-green-600 text-xs hover:text-green-400">
+                {">"} BLOCK EXPLORER
+              </a>
               <a href="/leaderboard" className="block text-green-600 text-xs hover:text-green-400">
                 {">"} LEADERBOARD
               </a>
