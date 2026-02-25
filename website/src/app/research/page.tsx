@@ -1,13 +1,26 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useState, useEffect } from "react";
 import { FadeIn } from "@/components/motion/FadeIn";
 
-export const metadata: Metadata = {
-  title: "Research Impact — Project POH",
-  description:
-    "How your compute power contributes to real science — protein folding, climate modeling, seismic analysis, and drug screening.",
-};
+interface NetworkStats {
+  verifiedTasks: number;
+  activeNodes: number;
+  uniqueMiners: number;
+  totalDistributed: number;
+}
 
 export default function ResearchPage() {
+  const [stats, setStats] = useState<NetworkStats | null>(null);
+
+  useEffect(() => {
+    fetch("/api/data/stats")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data) setStats(data);
+      })
+      .catch(() => {});
+  }, []);
   return (
     <div className="bg-background py-20 sm:py-28">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
@@ -98,11 +111,32 @@ export default function ResearchPage() {
         {/* ── Network Stats ── */}
         <Section id="stats" title="Network Stats">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Total compute hours donated" value="Coming soon" />
-            <StatCard label="Tasks verified" value="Coming soon" />
-            <StatCard label="Research partners" value="Coming soon" />
-            <StatCard label="Active miners" value="Coming soon" />
+            <StatCard
+              label="Tasks verified"
+              value={stats ? stats.verifiedTasks.toLocaleString() : "0"}
+            />
+            <StatCard
+              label="Active nodes"
+              value={stats ? stats.activeNodes.toLocaleString() : "0"}
+            />
+            <StatCard
+              label="Unique miners"
+              value={stats ? stats.uniqueMiners.toLocaleString() : "0"}
+            />
+            <StatCard
+              label="POH distributed"
+              value={stats ? stats.totalDistributed.toLocaleString() : "0"}
+            />
           </div>
+          {stats && stats.verifiedTasks === 0 && (
+            <p className="mt-4 text-center text-sm text-foreground/40">
+              Network is waiting for miners.{" "}
+              <a href="/mine" className="text-accent-light underline underline-offset-2 hover:text-accent">
+                Start mining
+              </a>{" "}
+              to contribute to science.
+            </p>
+          )}
         </Section>
       </div>
     </div>
