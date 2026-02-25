@@ -340,7 +340,7 @@ export default function WalletManager({
             {editingSavings ? (
               <div className="space-y-2">
                 <div className="text-green-800 text-xs">
-                  Enter your cold wallet address (MetaMask, Ledger, etc). Claimed rewards will be sent here.
+                  Enter your cold wallet address on <strong className="text-yellow-500">Base network</strong> (MetaMask, Ledger, etc). Claimed rewards will be sent here.
                 </div>
                 <input
                   type="text"
@@ -400,8 +400,8 @@ export default function WalletManager({
               </div>
             ) : (
               <div className="text-yellow-600 text-xs">
-                No savings wallet set. Add your cold wallet (Ledger, MetaMask, etc.) to
-                automatically receive claimed rewards to a secure address.
+                No savings wallet set. Add your cold wallet on <strong className="text-yellow-500">Base network</strong> (Ledger, MetaMask, etc.)
+                to automatically receive claimed rewards to a secure address.
               </div>
             )}
             {savingsSaved && (

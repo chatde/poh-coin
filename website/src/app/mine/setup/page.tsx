@@ -741,19 +741,23 @@ export default function SetupPage() {
 
             <div className="border border-green-800 rounded p-4 space-y-3">
               <div className="text-green-400 text-sm mb-2">
-                Savings Wallet — Cold Storage
+                Savings Wallet — Cold Storage (Base Network)
               </div>
               <div className="text-green-700 text-xs mb-3">
                 Send claimed rewards directly to a hardware wallet (Ledger, etc.)
                 so your mining phone never holds valuable tokens. This is optional
                 but strongly recommended.
               </div>
+              <div className="text-yellow-500 text-xs mb-3">
+                This must be a wallet on the <strong>Base network</strong> (Chain ID 8453).
+                Do NOT enter an Ethereum mainnet-only address or you may lose tokens.
+              </div>
 
               <input
                 type="text"
                 value={savingsWallet}
                 onChange={(e) => setSavingsWallet(e.target.value)}
-                placeholder="0x... (Ledger / cold wallet address)"
+                placeholder="0x... (Base network wallet address)"
                 className="w-full bg-black border border-green-800 text-green-400 py-2 px-3 rounded font-mono text-sm focus:border-green-500 focus:outline-none placeholder:text-green-900"
               />
 
