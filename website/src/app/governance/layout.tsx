@@ -9,6 +9,9 @@ export const metadata: Metadata = {
     description:
       "DAO governance for Project POH: token-weighted voting, proposals, and progressive decentralization.",
   },
+  alternates: {
+    canonical: "/governance",
+  },
 };
 
 export default function GovernanceLayout({

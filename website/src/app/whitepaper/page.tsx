@@ -11,6 +11,9 @@ export const metadata: Metadata = {
     description:
       "The full Project POH whitepaper: the Voyager Block Model, dual-work mining, RTG decay, BOINC integration, and the Voyager Chase Fund.",
   },
+  alternates: {
+    canonical: "/whitepaper",
+  },
 };
 
 export default function WhitepaperPage() {

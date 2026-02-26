@@ -9,6 +9,9 @@ export const metadata: Metadata = {
     description:
       "Contribute compute power to science and earn POH tokens. Mining dashboard for Proof of Planet.",
   },
+  alternates: {
+    canonical: "/mine",
+  },
 };
 
 export default function MineLayout({

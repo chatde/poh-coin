@@ -10,6 +10,9 @@ export const metadata: Metadata = {
     description:
       "Legal disclaimers, risk warnings, and regulatory notices for Project POH, a charity cryptocurrency on the Base network.",
   },
+  alternates: {
+    canonical: "/disclaimers",
+  },
 };
 
 const disclaimers = [

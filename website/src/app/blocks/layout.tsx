@@ -9,6 +9,9 @@ export const metadata: Metadata = {
     description:
       "Explore the POH blockchain: current block height, block rewards, RTG decay schedule, and Voyager decommission projections.",
   },
+  alternates: {
+    canonical: "/blocks",
+  },
 };
 
 export default function BlocksLayout({

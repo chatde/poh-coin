@@ -9,6 +9,9 @@ export const metadata: Metadata = {
     description:
       "Secure your POH tokens with a hardware wallet. Learn about smart contract security, verified contracts on Basescan, and best practices for cold storage.",
   },
+  alternates: {
+    canonical: "/security",
+  },
 };
 
 export default function SecurityLayout({

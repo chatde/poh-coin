@@ -9,6 +9,9 @@ export const metadata: Metadata = {
     description:
       "POH tokenomics: the Voyager Block Model, RTG decay emission curve, block reward schedule, and supply allocation for the Pursuit of Happiness token.",
   },
+  alternates: {
+    canonical: "/tokenomics",
+  },
 };
 
 export default function TokenomicsLayout({

@@ -9,6 +9,9 @@ export const metadata: Metadata = {
     description:
       "Track the Proof of Planet network in real-time: active nodes, verified tasks, charity distributions, and on-chain treasury data.",
   },
+  alternates: {
+    canonical: "/impact",
+  },
 };
 
 export default function ImpactLayout({

@@ -9,6 +9,9 @@ export const metadata: Metadata = {
     description:
       "Empower students to contribute to real science while earning POH tokens. Schools get up to 10 devices mining at full rates.",
   },
+  alternates: {
+    canonical: "/schools",
+  },
 };
 
 export default function SchoolsLayout({

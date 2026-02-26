@@ -23,6 +23,9 @@ export const metadata: Metadata = {
   title: "Project POH — Pursuit of Happiness Coin",
   description:
     "A charity cryptocurrency funding environmental, humanitarian, educational, and health causes — with tokenomics tied to Voyager 1's interstellar journey.",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "Project POH — Pursuit of Happiness Coin",
     description:

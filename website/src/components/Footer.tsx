@@ -6,6 +6,9 @@ const footerLinks = [
   { href: "/governance", label: "Governance" },
   { href: "/research", label: "Research" },
   { href: "/how-to-buy", label: "How to Buy" },
+  { href: "/about", label: "About" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/privacy", label: "Privacy Policy" },
   { href: "/disclaimers", label: "Disclaimers" },
   { href: "/terms", label: "Terms of Service" },
 ];

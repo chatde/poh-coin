@@ -1,17 +1,8 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useState } from "react";
 import { FadeIn } from "@/components/motion/FadeIn";
 import { CONTRACTS } from "@/lib/contracts";
-
-export const metadata: Metadata = {
-  title: "How to Buy POH — Project POH",
-  description:
-    "A beginner-friendly guide to purchasing Pursuit of Happiness tokens on the Base network.",
-  openGraph: {
-    title: "How to Buy POH — Project POH",
-    description:
-      "A beginner-friendly guide to purchasing Pursuit of Happiness tokens on the Base network.",
-  },
-};
 
 const networkDetails = [
   { label: "Network Name", value: "Base" },
@@ -20,6 +11,121 @@ const networkDetails = [
   { label: "Currency Symbol", value: "ETH" },
   { label: "Block Explorer", value: "https://basescan.org" },
 ];
+
+function CopyIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+function MetaMaskIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M22.282 1.093l-8.36 6.206 1.548-3.666 6.812-2.54z" />
+      <path d="M1.718 1.093l8.293 6.263L8.53 3.633 1.718 1.093zM19.1 16.28l-2.227 3.413 4.766 1.31 1.37-4.643L19.1 16.28zM.996 16.36l1.362 4.643 4.766-1.31-2.227-3.413-3.9.08z" />
+      <path d="M6.85 10.267l-1.327 2.006 4.728.21-.166-5.082-3.236 2.866zM17.15 10.267l-3.283-2.923-.11 5.14 4.72-.21-1.327-2.007zM7.124 19.693l2.84-1.388-2.452-1.916-.388 3.304zM14.036 18.305l2.84 1.388-.388-3.304-2.452 1.916z" />
+    </svg>
+  );
+}
+
+function ContractAddressActions() {
+  const [copied, setCopied] = useState(false);
+  const [metamaskStatus, setMetamaskStatus] = useState<"idle" | "added" | "error">("idle");
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(CONTRACTS.token);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = CONTRACTS.token;
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
+  async function handleAddToMetaMask() {
+    const ethereum = (window as unknown as { ethereum?: { request: (args: { method: string; params: unknown }) => Promise<boolean> } }).ethereum;
+    if (!ethereum) {
+      setMetamaskStatus("error");
+      setTimeout(() => setMetamaskStatus("idle"), 3000);
+      return;
+    }
+
+    try {
+      await ethereum.request({
+        method: "wallet_watchAsset",
+        params: {
+          type: "ERC20",
+          options: {
+            address: CONTRACTS.token,
+            symbol: "POH",
+            decimals: 18,
+            image: "https://projectpoh.com/logo/poh-token.svg",
+          },
+        },
+      });
+      setMetamaskStatus("added");
+      setTimeout(() => setMetamaskStatus("idle"), 3000);
+    } catch {
+      setMetamaskStatus("error");
+      setTimeout(() => setMetamaskStatus("idle"), 3000);
+    }
+  }
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-voyager-gold/30 bg-voyager-gold/10 px-3 py-1.5 text-xs font-medium text-voyager-gold transition-all hover:bg-voyager-gold/20 active:scale-95"
+      >
+        {copied ? (
+          <>
+            <CheckIcon className="h-3.5 w-3.5" />
+            Copied!
+          </>
+        ) : (
+          <>
+            <CopyIcon className="h-3.5 w-3.5" />
+            Copy Address
+          </>
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={handleAddToMetaMask}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent-light transition-all hover:bg-accent/20 active:scale-95"
+      >
+        <MetaMaskIcon className="h-3.5 w-3.5" />
+        {metamaskStatus === "added"
+          ? "Added to MetaMask!"
+          : metamaskStatus === "error"
+            ? "MetaMask not found"
+            : "Add to MetaMask"}
+      </button>
+    </div>
+  );
+}
 
 const steps = [
   {
@@ -218,6 +324,7 @@ const steps = [
               <span className="mt-2 block rounded-md border border-voyager-gold/30 bg-voyager-gold/5 px-3 py-2 font-mono text-sm text-voyager-gold">
                 {CONTRACTS.token}
               </span>
+              <ContractAddressActions />
             </span>
           </li>
           <li className="flex items-start gap-3">

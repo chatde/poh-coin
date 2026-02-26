@@ -9,6 +9,9 @@ export const metadata: Metadata = {
     description:
       "Terms of Service for Project POH, the Pursuit of Happiness charity cryptocurrency on the Base network.",
   },
+  alternates: {
+    canonical: "/terms",
+  },
 };
 
 export default function TermsPage() {

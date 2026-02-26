@@ -9,6 +9,9 @@ export const metadata: Metadata = {
     description:
       "Top miners, validators, and regions in the Proof of Planet network. See who is earning the most POH and contributing the most to science.",
   },
+  alternates: {
+    canonical: "/leaderboard",
+  },
 };
 
 export default function LeaderboardLayout({
