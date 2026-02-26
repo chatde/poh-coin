@@ -102,25 +102,25 @@ export function VoyagerTracker() {
             <p className="font-mono text-xl font-bold text-accent-light">
               {formatBlockHeight(state.blockHeight)}
             </p>
-            <p className="text-xs text-foreground/40">Block Height</p>
+            <p className="text-xs text-foreground/50">Block Height</p>
           </div>
           <div className="flex flex-col items-center">
             <p className="font-mono text-xl font-bold text-charity-green">
               {formatPOHAmount(state.blockReward, 0)}
             </p>
-            <p className="text-xs text-foreground/40">POH / Block</p>
+            <p className="text-xs text-foreground/50">POH / Block</p>
           </div>
           <div className="flex flex-col items-center">
             <p className="font-mono text-xl font-bold text-foreground">
               ~{state.blocksPerDay.toLocaleString("en-US")}
             </p>
-            <p className="text-xs text-foreground/40">Blocks / Day</p>
+            <p className="text-xs text-foreground/50">Blocks / Day</p>
           </div>
           <div className="flex flex-col items-center">
             <p className="font-mono text-xl font-bold text-foreground/70">
               {state.lightHours.toFixed(1)}h
             </p>
-            <p className="text-xs text-foreground/40">Light Delay</p>
+            <p className="text-xs text-foreground/50">Light Delay</p>
           </div>
         </div>
 
@@ -132,7 +132,7 @@ export function VoyagerTracker() {
               {formatDistanceKm(VOYAGER_LAUNCH_KM)}
             </span>
           </p>
-          <p className="text-xs text-foreground/40">
+          <p className="text-xs text-foreground/50">
             +{formatDistanceKm(state.minableKm)} km minable beyond launch
           </p>
         </div>

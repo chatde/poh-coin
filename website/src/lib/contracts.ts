@@ -82,6 +82,8 @@ export const REWARDS_ABI = [
   "function TIMELOCK_DURATION() view returns (uint256)",
   "function hasClaimed(uint256, address) view returns (bool)",
   "function savingsWallet(address) view returns (address)",
+  "function claim(uint256 _epoch, uint256 _claimableNow, uint256 _vestingAmount, uint256 _vestingDuration, bytes32[] _proof) external",
+  "function claimBatch(uint256[] _epochs, uint256[] _claimableNows, uint256[] _vestingAmounts, uint256[] _vestingDurations, bytes32[][] _proofs) external",
 ];
 
 export const REGISTRY_ABI = [

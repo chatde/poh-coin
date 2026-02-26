@@ -141,7 +141,7 @@ export default function GovernancePage() {
             </p>
             <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <a
-                href="https://www.tally.xyz"
+                href="https://www.tally.xyz/gov/project-poh"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-accent to-accent-light px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent/25 transition-all hover:shadow-accent/40 hover:scale-105"
@@ -149,7 +149,7 @@ export default function GovernancePage() {
                 Vote on Tally
               </a>
             </div>
-            <p className="mt-4 text-foreground/40 text-xs">
+            <p className="mt-4 text-foreground/50 text-xs">
               Once the POH Governor is registered on Tally, you can view all
               proposals, delegate voting power, and vote directly from the
               Tally interface. You can also use the governance contracts

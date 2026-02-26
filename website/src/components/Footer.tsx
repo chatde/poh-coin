@@ -7,6 +7,7 @@ const footerLinks = [
   { href: "/research", label: "Research" },
   { href: "/how-to-buy", label: "How to Buy" },
   { href: "/disclaimers", label: "Disclaimers" },
+  { href: "/terms", label: "Terms of Service" },
 ];
 
 const socialLinks = [
@@ -130,13 +131,13 @@ export function Footer() {
 
         {/* Bottom section */}
         <div className="flex flex-col items-center gap-4 text-center">
-          <p className="max-w-xl text-xs leading-relaxed text-foreground/40">
+          <p className="max-w-xl text-xs leading-relaxed text-foreground/50">
             POH is a utility token on the Base network. This website and its
             contents do not constitute financial advice, an investment
             solicitation, or a recommendation to buy or sell any asset. Not
             financial advice. Not an investment.
           </p>
-          <p className="text-xs text-foreground/30">
+          <p className="text-xs text-foreground/50">
             &copy; {currentYear} Project POH. All rights reserved.
           </p>
         </div>

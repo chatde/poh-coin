@@ -4,6 +4,11 @@ export const metadata: Metadata = {
   title: "Research Impact — Project POH",
   description:
     "How your compute power contributes to real science — protein folding, climate modeling, seismic analysis, and drug screening.",
+  openGraph: {
+    title: "Research Impact — Project POH",
+    description:
+      "How your compute power contributes to real science — protein folding, climate modeling, seismic analysis, and drug screening.",
+  },
 };
 
 export default function ResearchLayout({

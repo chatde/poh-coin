@@ -152,7 +152,7 @@ export default function MinePage() {
           </div>
           <button
             onClick={handleConnectWearable}
-            className="shrink-0 border border-green-500 text-green-400 py-1.5 px-3 rounded font-mono text-xs hover:bg-green-900/30 transition-colors"
+            className="shrink-0 border border-green-500 text-green-400 py-2.5 px-4 rounded font-mono text-xs hover:bg-green-900/30 transition-colors"
           >
             [ CONNECT ]
           </button>
@@ -165,7 +165,7 @@ export default function MinePage() {
           <button
             key={view}
             onClick={() => setMiningView(view)}
-            className={`text-xs font-mono px-3 py-1 rounded border transition-colors ${
+            className={`text-xs font-mono px-4 py-2 rounded border transition-colors ${
               miningView === view
                 ? "border-green-500 text-green-400 bg-green-900/20"
                 : "border-green-900 text-green-700 hover:text-green-400"

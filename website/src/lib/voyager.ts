@@ -85,11 +85,14 @@ export function getLightHoursDelay(now: Date = new Date()): number {
 
 /**
  * Whether Voyager 1 is considered active (not decommissioned).
- * This is a manual flag — in production, governed by a Supabase flag
- * or DAO vote. For now, always returns true.
+ *
+ * Returns true until governance implements the decommission event.
+ * In the future this will be driven by a Supabase feature flag or
+ * an on-chain DAO vote. Until then, Voyager is assumed active and
+ * blocks continue to be generated.
  */
 export function isVoyagerActive(): boolean {
-  // TODO: Check Supabase flag or governance state
+  // TODO: Check Supabase flag or governance state once available.
   return true;
 }
 

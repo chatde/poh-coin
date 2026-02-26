@@ -4,6 +4,11 @@ export const metadata: Metadata = {
   title: "Governance — Project POH",
   description:
     "DAO governance for Project POH: token-weighted voting, proposals, and progressive decentralization.",
+  openGraph: {
+    title: "Governance — Project POH",
+    description:
+      "DAO governance for Project POH: token-weighted voting, proposals, and progressive decentralization.",
+  },
 };
 
 export default function GovernanceLayout({

@@ -1,3 +1,16 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms of Service — Project POH",
+  description:
+    "Terms of Service for Project POH, the Pursuit of Happiness charity cryptocurrency on the Base network.",
+  openGraph: {
+    title: "Terms of Service — Project POH",
+    description:
+      "Terms of Service for Project POH, the Pursuit of Happiness charity cryptocurrency on the Base network.",
+  },
+};
+
 export default function TermsPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-20 sm:px-6">

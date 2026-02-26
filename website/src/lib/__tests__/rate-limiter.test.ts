@@ -1,7 +1,76 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RATE_LIMITS } from '../rate-limiter';
 
+// Mock supabase before importing checkRateLimit
+const mockSelect = vi.fn();
+const mockEq = vi.fn();
+const mockGte = vi.fn();
+const mockInsert = vi.fn();
+const mockFrom = vi.fn();
+
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: (...args: unknown[]) => mockFrom(...args),
+  },
+}));
+
+function setupSupabaseMock(selectResult: { count: number | null; error: unknown }) {
+  mockGte.mockResolvedValue(selectResult);
+  mockEq.mockReturnValue({ gte: mockGte });
+  mockSelect.mockReturnValue({ eq: mockEq });
+  mockInsert.mockResolvedValue({ error: null });
+  mockFrom.mockImplementation((table: string) => {
+    return {
+      select: mockSelect,
+      insert: mockInsert,
+    };
+  });
+}
+
 describe('rate-limiter.ts', () => {
+  describe('checkRateLimit — fail-closed behavior', () => {
+    let checkRateLimit: typeof import('../rate-limiter').checkRateLimit;
+
+    beforeEach(async () => {
+      vi.clearAllMocks();
+      // Dynamic import to pick up the mock
+      const mod = await import('../rate-limiter');
+      checkRateLimit = mod.checkRateLimit;
+    });
+
+    it('should return false (deny) when the DB count query returns an error', async () => {
+      setupSupabaseMock({ count: null, error: { message: 'connection refused' } });
+      const result = await checkRateLimit('test:key', 10, 60_000);
+      expect(result).toBe(false);
+    });
+
+    it('should return false (deny) when supabase throws an exception', async () => {
+      mockFrom.mockImplementation(() => {
+        throw new Error('supabase client crashed');
+      });
+      const result = await checkRateLimit('test:key', 10, 60_000);
+      expect(result).toBe(false);
+    });
+
+    it('should return true (allow) when under the rate limit', async () => {
+      setupSupabaseMock({ count: 2, error: null });
+      const result = await checkRateLimit('test:key', 10, 60_000);
+      expect(result).toBe(true);
+    });
+
+    it('should return false (deny) when at the rate limit', async () => {
+      setupSupabaseMock({ count: 10, error: null });
+      const result = await checkRateLimit('test:key', 10, 60_000);
+      expect(result).toBe(false);
+    });
+
+    it('should return false (deny) when over the rate limit', async () => {
+      setupSupabaseMock({ count: 15, error: null });
+      const result = await checkRateLimit('test:key', 10, 60_000);
+      expect(result).toBe(false);
+    });
+  });
+
   describe('RATE_LIMITS configuration', () => {
     it('should have REGISTER_PER_WALLET limit', () => {
       expect(RATE_LIMITS.REGISTER_PER_WALLET).toEqual({

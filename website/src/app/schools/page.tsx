@@ -135,7 +135,7 @@ export default function SchoolsPage() {
         >
           Register Your School
         </a>
-        <p className="text-foreground/40 text-xs mt-4">
+        <p className="text-foreground/50 text-xs mt-4">
           Or reach out on Discord or Telegram for faster response.
         </p>
       </section>

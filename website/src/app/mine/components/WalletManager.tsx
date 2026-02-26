@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
-import { RPC_URL, CONTRACTS, TOKEN_ABI, formatPOH, BLOCK_EXPLORER } from "@/lib/contracts";
+import { RPC_URL, CONTRACTS, TOKEN_ABI, REWARDS_ABI, formatPOH, BLOCK_EXPLORER } from "@/lib/contracts";
 
 interface WalletManagerProps {
   walletAddress: string;
@@ -15,6 +15,7 @@ interface UnclaimedReward {
   poh_amount: string;
   claimable_now: string;
   vesting_amount: string;
+  vesting_duration_days: number;
   claimed: boolean;
   merkle_proof: string[];
 }
@@ -183,33 +184,56 @@ export default function WalletManager({
       const provider = new ethers.JsonRpcProvider(RPC_URL);
       const wallet = ethers.Wallet.fromPhrase(mnemonic).connect(provider);
 
-      // Claim each unclaimed epoch
       const rewardsContract = new ethers.Contract(
         CONTRACTS.rewards,
-        [
-          "function claim(uint256 epoch, uint256 amount, bytes32[] calldata proof) external",
-        ],
+        REWARDS_ABI,
         wallet
       );
 
-      let claimedCount = 0;
-      for (const reward of unclaimed) {
-        try {
-          const tx = await rewardsContract.claim(
-            reward.epoch,
-            ethers.parseEther(reward.poh_amount),
-            reward.merkle_proof
-          );
-          await tx.wait();
-          claimedCount++;
-        } catch (err: unknown) {
-          const errorMsg = err instanceof Error ? err.message : String(err);
-          if (errorMsg.includes("already claimed")) continue;
-          throw err;
-        }
-      }
+      const SECONDS_PER_DAY = 86400;
 
-      setClaimResult(`Claimed ${claimedCount} epoch${claimedCount !== 1 ? "s" : ""} successfully.`);
+      if (unclaimed.length === 1) {
+        // Single epoch: use claim() directly
+        const reward = unclaimed[0];
+        const claimableNow = ethers.parseEther(reward.claimable_now);
+        const vestingAmount = ethers.parseEther(reward.vesting_amount);
+        const vestingDuration = BigInt(reward.vesting_duration_days || 0) * BigInt(SECONDS_PER_DAY);
+
+        const tx = await rewardsContract.claim(
+          reward.epoch,
+          claimableNow,
+          vestingAmount,
+          vestingDuration,
+          reward.merkle_proof
+        );
+        await tx.wait();
+        setClaimResult("Claimed 1 epoch successfully.");
+      } else {
+        // Multiple epochs: use claimBatch() for gas efficiency
+        const epochs: number[] = [];
+        const claimableNows: bigint[] = [];
+        const vestingAmounts: bigint[] = [];
+        const vestingDurations: bigint[] = [];
+        const proofs: string[][] = [];
+
+        for (const reward of unclaimed) {
+          epochs.push(reward.epoch);
+          claimableNows.push(ethers.parseEther(reward.claimable_now));
+          vestingAmounts.push(ethers.parseEther(reward.vesting_amount));
+          vestingDurations.push(BigInt(reward.vesting_duration_days || 0) * BigInt(SECONDS_PER_DAY));
+          proofs.push(reward.merkle_proof);
+        }
+
+        const tx = await rewardsContract.claimBatch(
+          epochs,
+          claimableNows,
+          vestingAmounts,
+          vestingDurations,
+          proofs
+        );
+        await tx.wait();
+        setClaimResult(`Claimed ${unclaimed.length} epoch${unclaimed.length !== 1 ? "s" : ""} successfully.`);
+      }
 
       // Refresh rewards
       const res = await fetch(`/api/rewards?address=${walletAddress}`);
@@ -224,6 +248,15 @@ export default function WalletManager({
         setClaimResult("Rewards are still in timelock. Check back Tuesday.");
       } else if (errorMsg.includes("insufficient funds")) {
         setClaimResult("Not enough ETH for gas. Send a small amount of ETH to your mining wallet.");
+      } else if (errorMsg.includes("already claimed")) {
+        setClaimResult("Some epochs already claimed. Refreshing...");
+        // Refresh to get accurate unclaimed list
+        const res = await fetch(`/api/rewards?address=${walletAddress}`);
+        if (res.ok) {
+          const data = await res.json();
+          setUnclaimed(data.unclaimed || []);
+          setTotalUnclaimed(data.totalUnclaimed || 0);
+        }
       } else {
         setClaimResult("Claim failed. Try again later or check your ETH balance for gas.");
       }

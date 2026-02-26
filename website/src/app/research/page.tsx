@@ -98,12 +98,11 @@ export default function ResearchPage() {
               >
                 research@projectpoh.com
               </a>
-              <a
-                href="/docs/api"
-                className="inline-flex items-center gap-2 rounded-xl border border-surface-light px-6 py-3 text-sm font-semibold text-foreground/70 transition-colors hover:border-accent-light hover:text-accent-light"
+              <span
+                className="inline-flex items-center gap-2 rounded-xl border border-surface-light/50 px-6 py-3 text-sm font-semibold text-foreground/50 cursor-default"
               >
-                API Documentation
-              </a>
+                API Docs — Coming Soon
+              </span>
             </div>
           </div>
         </Section>
@@ -129,7 +128,7 @@ export default function ResearchPage() {
             />
           </div>
           {stats && stats.verifiedTasks === 0 && (
-            <p className="mt-4 text-center text-sm text-foreground/40">
+            <p className="mt-4 text-center text-sm text-foreground/50">
               Network is waiting for miners.{" "}
               <a href="/mine" className="text-accent-light underline underline-offset-2 hover:text-accent">
                 Start mining

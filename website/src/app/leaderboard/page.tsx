@@ -80,7 +80,7 @@ export default function LeaderboardPage() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
+            className={`px-4 py-3 text-sm font-medium transition-colors ${
               tab === t.key
                 ? "text-charity-green border-b-2 border-charity-green"
                 : "text-foreground/50 hover:text-foreground"
@@ -92,14 +92,14 @@ export default function LeaderboardPage() {
       </div>
 
       {loading ? (
-        <div className="text-foreground/40 text-center py-12">Loading leaderboard...</div>
+        <div className="text-foreground/50 text-center py-12">Loading leaderboard...</div>
       ) : (
         <>
           {/* This Epoch */}
           {tab === "miners" && (
             <div className="space-y-2">
               {topMiners.length === 0 ? (
-                <div className="text-foreground/40 text-center py-12">
+                <div className="text-foreground/50 text-center py-12">
                   No mining activity this epoch yet. Be the first!
                 </div>
               ) : (
@@ -118,7 +118,7 @@ export default function LeaderboardPage() {
                         key={miner.wallet_address}
                         className="border-b border-surface-light/50 hover:bg-surface/50"
                       >
-                        <td className="py-2 text-foreground/40">{i + 1}</td>
+                        <td className="py-2 text-foreground/50">{i + 1}</td>
                         <td className="py-2 text-foreground font-mono text-xs">
                           {truncateAddr(miner.wallet_address)}
                         </td>
@@ -142,7 +142,7 @@ export default function LeaderboardPage() {
           {tab === "alltime" && (
             <div className="space-y-2">
               {allTimeMiners.length === 0 ? (
-                <div className="text-foreground/40 text-center py-12">
+                <div className="text-foreground/50 text-center py-12">
                   No rewards distributed yet.
                 </div>
               ) : (
@@ -160,7 +160,7 @@ export default function LeaderboardPage() {
                         key={miner.wallet_address}
                         className="border-b border-surface-light/50 hover:bg-surface/50"
                       >
-                        <td className="py-2 text-foreground/40">{i + 1}</td>
+                        <td className="py-2 text-foreground/50">{i + 1}</td>
                         <td className="py-2 text-foreground font-mono text-xs">
                           {truncateAddr(miner.wallet_address)}
                         </td>
@@ -179,7 +179,7 @@ export default function LeaderboardPage() {
           {tab === "validators" && (
             <div className="space-y-2">
               {topValidators.length === 0 ? (
-                <div className="text-foreground/40 text-center py-12">
+                <div className="text-foreground/50 text-center py-12">
                   No validators active yet.
                 </div>
               ) : (
@@ -197,7 +197,7 @@ export default function LeaderboardPage() {
                         key={v.device_id}
                         className="border-b border-surface-light/50 hover:bg-surface/50"
                       >
-                        <td className="py-2 text-foreground/40">{i + 1}</td>
+                        <td className="py-2 text-foreground/50">{i + 1}</td>
                         <td className="py-2 text-foreground font-mono text-xs">
                           {truncateAddr(v.wallet_address)}
                         </td>
@@ -216,7 +216,7 @@ export default function LeaderboardPage() {
           {tab === "regions" && (
             <div className="space-y-2">
               {topRegions.length === 0 ? (
-                <div className="text-foreground/40 text-center py-12">
+                <div className="text-foreground/50 text-center py-12">
                   No active regions yet.
                 </div>
               ) : (
@@ -234,7 +234,7 @@ export default function LeaderboardPage() {
                         key={r.h3Cell}
                         className="border-b border-surface-light/50 hover:bg-surface/50"
                       >
-                        <td className="py-2 text-foreground/40">{i + 1}</td>
+                        <td className="py-2 text-foreground/50">{i + 1}</td>
                         <td className="py-2 text-foreground font-mono text-xs">
                           {r.h3Cell}
                         </td>

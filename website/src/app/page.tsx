@@ -364,7 +364,7 @@ export default function Home() {
 
         {/* Scroll-down indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <IconChevronDown className="h-6 w-6 text-foreground/30" />
+          <IconChevronDown className="h-6 w-6 text-foreground/50" />
         </div>
       </section>
 
@@ -714,7 +714,7 @@ export default function Home() {
                   <p className="mt-2 text-3xl font-extrabold tracking-tight text-foreground stat-glow">
                     <CountUp end={24.526} duration={2.5} decimals={3} suffix="B" />
                   </p>
-                  <p className="mt-1 text-xs text-foreground/40">tied to Voyager 1</p>
+                  <p className="mt-1 text-xs text-foreground/50">tied to Voyager 1</p>
                 </div>
               </TiltCard>
             </StaggerChild>
@@ -725,7 +725,7 @@ export default function Home() {
                   <p className="mt-2 text-3xl font-extrabold tracking-tight text-foreground">
                     <CountUp end={1} duration={1.5} suffix="%" />
                   </p>
-                  <p className="mt-1 text-xs text-foreground/40">charity allocation</p>
+                  <p className="mt-1 text-xs text-foreground/50">charity allocation</p>
                 </div>
               </TiltCard>
             </StaggerChild>
@@ -736,7 +736,7 @@ export default function Home() {
                   <p className="mt-2 text-3xl font-extrabold tracking-tight text-foreground">
                     <CountUp end={3} duration={1.5} suffix="%" />
                   </p>
-                  <p className="mt-1 text-xs text-foreground/40">charity + LP</p>
+                  <p className="mt-1 text-xs text-foreground/50">charity + LP</p>
                 </div>
               </TiltCard>
             </StaggerChild>
@@ -747,7 +747,7 @@ export default function Home() {
                   <p className="mt-2 text-3xl font-extrabold tracking-tight text-foreground">
                     <CountUp end={0.5} duration={1.5} decimals={1} suffix="%" />
                   </p>
-                  <p className="mt-1 text-xs text-foreground/40">minimal friction</p>
+                  <p className="mt-1 text-xs text-foreground/50">minimal friction</p>
                 </div>
               </TiltCard>
             </StaggerChild>
@@ -891,7 +891,7 @@ export default function Home() {
             </div>
 
             {/* Disclaimer */}
-            <p className="mt-12 text-xs text-foreground/30 max-w-xl mx-auto">
+            <p className="mt-12 text-xs text-foreground/50 max-w-xl mx-auto">
               POH is a utility token on the Base network. This is not financial advice
               and not an investment solicitation. Smart contracts are unaudited &mdash;
               participate at your own risk. Always do your own research.

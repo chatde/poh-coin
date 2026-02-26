@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: "Legal Disclaimers — Project POH",
   description:
     "Legal disclaimers, risk warnings, and regulatory notices for Project POH, a charity cryptocurrency on the Base network.",
+  openGraph: {
+    title: "Legal Disclaimers — Project POH",
+    description:
+      "Legal disclaimers, risk warnings, and regulatory notices for Project POH, a charity cryptocurrency on the Base network.",
+  },
 };
 
 const disclaimers = [
@@ -301,7 +306,7 @@ const disclaimers = [
           Your continued use of the website or interaction with POH tokens after
           any changes constitutes your acceptance of the updated disclaimers.
         </p>
-        <p className="mt-4 text-sm text-foreground/40">
+        <p className="mt-4 text-sm text-foreground/50">
           Last updated: February 2026
         </p>
       </>

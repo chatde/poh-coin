@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   title: "How to Buy POH — Project POH",
   description:
     "A beginner-friendly guide to purchasing Pursuit of Happiness tokens on the Base network.",
+  openGraph: {
+    title: "How to Buy POH — Project POH",
+    description:
+      "A beginner-friendly guide to purchasing Pursuit of Happiness tokens on the Base network.",
+  },
 };
 
 const networkDetails = [
@@ -225,7 +230,7 @@ const steps = [
             <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface-light text-xs font-semibold text-foreground/60">
               6
             </span>
-            Set slippage to 4% (to account for the 3% sell fee)
+            Set slippage to 4% (to account for the 1% buy fee and price movement)
           </li>
           <li className="flex items-start gap-3">
             <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface-light text-xs font-semibold text-foreground/60">
@@ -349,7 +354,9 @@ export default function HowToBuyPage() {
             educational, and health initiatives around the world.
           </p>
           <a
-            href="#"
+            href="https://app.uniswap.org/swap?outputCurrency=0x280Ddb8b67Ad8cf791D370FE59227d19e989Fb07&chain=base"
+            target="_blank"
+            rel="noopener noreferrer"
             className="mt-8 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-accent to-accent-light px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-accent/20 transition-all hover:shadow-accent-light/20 hover:scale-105"
           >
             Buy POH on Uniswap

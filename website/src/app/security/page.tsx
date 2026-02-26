@@ -50,7 +50,7 @@ export default function SecurityPage() {
               </div>
               <p className="text-foreground/50 text-sm">
                 Automated static analysis by Trail of Bits. No critical or
-                high-severity vulnerabilities detected across all 5 contracts.
+                high-severity vulnerabilities detected across all 7 contracts.
               </p>
             </div>
             <div className="rounded-lg border border-charity-green/20 bg-charity-green/5 p-4">
@@ -60,12 +60,12 @@ export default function SecurityPage() {
               </div>
               <p className="text-foreground/50 text-sm">
                 Symbolic execution engine by ConsenSys. Zero issues detected
-                across all 5 contracts. Checks for reentrancy, integer overflow,
+                across all 7 contracts. Checks for reentrancy, integer overflow,
                 and more.
               </p>
             </div>
           </div>
-          <p className="text-foreground/40 text-xs">
+          <p className="text-foreground/50 text-xs">
             Source code is open source at{" "}
             <a
               href="https://github.com/chatde/poh-coin"
@@ -112,7 +112,7 @@ export default function SecurityPage() {
             </tbody>
           </table>
         </div>
-        <p className="mt-3 text-foreground/40 text-xs">
+        <p className="mt-3 text-foreground/50 text-xs">
           All contracts are verified on {IS_MAINNET ? "Basescan" : "Base Sepolia Basescan"}. Click any address to view the full source code on-chain.
         </p>
       </section>
@@ -159,7 +159,7 @@ export default function SecurityPage() {
                 Add the Base network to your hardware wallet
               </li>
             </ul>
-            <p className="text-foreground/40 text-xs mt-4">
+            <p className="text-foreground/50 text-xs mt-4">
               Don&apos;t have a hardware wallet? A separate phone (kept offline)
               or a MetaMask on a computer you don&apos;t carry around also works
               as an intermediate solution.
@@ -282,7 +282,7 @@ export default function SecurityPage() {
                 </ul>
               </div>
             </div>
-            <p className="text-foreground/40 text-xs mt-4">
+            <p className="text-foreground/50 text-xs mt-4">
               Vested tokens are locked in the smart contract and released
               automatically after the vesting period. You call
               releaseVested() to claim them.

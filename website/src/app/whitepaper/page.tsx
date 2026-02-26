@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   title: "Whitepaper — Project POH",
   description:
     "The full Project POH whitepaper: the Voyager Block Model, dual-work mining, RTG decay, BOINC integration, and the Voyager Chase Fund.",
+  openGraph: {
+    title: "Whitepaper — Project POH",
+    description:
+      "The full Project POH whitepaper: the Voyager Block Model, dual-work mining, RTG decay, BOINC integration, and the Voyager Chase Fund.",
+  },
 };
 
 export default function WhitepaperPage() {
@@ -600,6 +605,8 @@ export default function WhitepaperPage() {
                   { name: "POHVesting (Founder Lock)", addr: CONTRACTS.vesting },
                   { name: "POHRewards (Mining)", addr: CONTRACTS.rewards },
                   { name: "POHNodeRegistry", addr: CONTRACTS.registry },
+                  { name: "TimelockController", addr: "0x64981B544a20d6933466c363dD175cA1FaD96Bb6" },
+                  { name: "POHGovernor", addr: "0x7C96Ed675033F15a53557f1d0190e00B19522e6e" },
                 ].map((c) => (
                   <tr key={c.name}>
                     <td className="py-3 pr-4 font-medium text-foreground">{c.name}</td>

@@ -179,7 +179,7 @@ export default function ImpactPage() {
             <p className="mt-2 text-3xl font-bold text-charity-green">
               {stats?.activeNodes ?? 0}
             </p>
-            <p className="mt-1 text-xs text-foreground/40">
+            <p className="mt-1 text-xs text-foreground/50">
               Phones computing for science
             </p>
           </div>
@@ -191,7 +191,7 @@ export default function ImpactPage() {
             <p className="mt-2 text-3xl font-bold text-voyager-gold">
               {(stats?.verifiedTasks ?? 0).toLocaleString()}
             </p>
-            <p className="mt-1 text-xs text-foreground/40">
+            <p className="mt-1 text-xs text-foreground/50">
               Protein, climate, signal computations
             </p>
           </div>
@@ -203,7 +203,7 @@ export default function ImpactPage() {
             <p className="mt-2 text-3xl font-bold text-accent-light">
               {formatTokenCount(stats?.totalDistributed ?? 0)}
             </p>
-            <p className="mt-1 text-xs text-foreground/40">
+            <p className="mt-1 text-xs text-foreground/50">
               Tokens earned by miners
             </p>
           </div>
@@ -215,7 +215,7 @@ export default function ImpactPage() {
             <p className="mt-2 text-3xl font-bold text-accent-light">
               {stats?.uniqueMiners ?? 0}
             </p>
-            <p className="mt-1 text-xs text-foreground/40">
+            <p className="mt-1 text-xs text-foreground/50">
               Wallets earning rewards
             </p>
           </div>
@@ -249,7 +249,7 @@ export default function ImpactPage() {
         <section className="mb-16">
           <h2 className="mb-6 text-2xl font-bold tracking-tight text-foreground">
             On-Chain Treasury
-            <span className="ml-2 text-xs font-normal text-foreground/40">{IS_MAINNET ? "Base Mainnet" : "Base Sepolia Testnet"}</span>
+            <span className="ml-2 text-xs font-normal text-foreground/50">{IS_MAINNET ? "Base Mainnet" : "Base Sepolia Testnet"}</span>
           </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <div className="glass-card p-6">
@@ -261,7 +261,7 @@ export default function ImpactPage() {
                 href={`${BLOCK_EXPLORER}/address/${CONTRACTS.charity}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-1 text-xs text-foreground/30 hover:text-accent-light"
+                className="mt-1 text-xs text-foreground/50 hover:text-accent-light"
               >
                 View on Basescan
               </a>
@@ -271,7 +271,7 @@ export default function ImpactPage() {
               <p className="mt-2 text-2xl font-bold text-accent-light">
                 {onChain.rewardsPool} POH
               </p>
-              <p className="mt-1 text-xs text-foreground/40">
+              <p className="mt-1 text-xs text-foreground/50">
                 Remaining: {onChain.rewardsRemaining}
               </p>
             </div>
@@ -280,7 +280,7 @@ export default function ImpactPage() {
               <p className="mt-2 text-2xl font-bold text-voyager-gold">
                 {onChain.vestedPct}% vested
               </p>
-              <p className="mt-1 text-xs text-foreground/40">
+              <p className="mt-1 text-xs text-foreground/50">
                 Released: {onChain.vestingReleased} | Claimable: {onChain.vestingReleasable}
               </p>
             </div>
@@ -289,7 +289,7 @@ export default function ImpactPage() {
               <p className="mt-2 text-2xl font-bold text-foreground">
                 {onChain.totalNodes}
               </p>
-              <p className="mt-1 text-xs text-foreground/40">
+              <p className="mt-1 text-xs text-foreground/50">
                 Validators: {onChain.totalValidators} | Staked: {onChain.totalStaked}
               </p>
             </div>
@@ -321,17 +321,17 @@ export default function ImpactPage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-surface-light/50">
-                <th className="px-6 py-4 font-medium text-foreground/50">Date</th>
-                <th className="px-6 py-4 font-medium text-foreground/50">Recipient</th>
-                <th className="px-6 py-4 font-medium text-foreground/50">Amount</th>
-                <th className="px-6 py-4 font-medium text-foreground/50">Tx Hash</th>
+                <th className="px-3 sm:px-6 py-4 font-medium text-foreground/50">Date</th>
+                <th className="px-3 sm:px-6 py-4 font-medium text-foreground/50">Recipient</th>
+                <th className="px-3 sm:px-6 py-4 font-medium text-foreground/50">Amount</th>
+                <th className="px-3 sm:px-6 py-4 font-medium text-foreground/50">Tx Hash</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td colSpan={4} className="px-6 py-12 text-center text-foreground/40">
-                  No distributions yet. The charity treasury will begin
-                  distributing once the project launches on mainnet.
+                <td colSpan={4} className="px-3 sm:px-6 py-12 text-center text-foreground/50">
+                  No distributions yet. The charity treasury will begin distributing as
+                  the mining community grows and governance proposals are submitted.
                 </td>
               </tr>
             </tbody>

@@ -31,7 +31,9 @@ export async function checkRateLimit(
       .eq("key", key)
       .gte("window_start", windowStart.toISOString());
 
-    if (countError) return true; // Fail open on DB errors
+    // SECURITY: Fail closed — if we can't verify rate limit state, deny the request.
+    // A DB outage must not disable rate limiting entirely.
+    if (countError) return false;
 
     if ((count || 0) >= maxCount) {
       return false; // Rate limited
@@ -46,7 +48,9 @@ export async function checkRateLimit(
 
     return true;
   } catch {
-    return true; // Fail open
+    // SECURITY: Fail closed — deny requests when rate limiting is unavailable.
+    // Prefer temporary service disruption over unprotected endpoints.
+    return false;
   }
 }
 

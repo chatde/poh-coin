@@ -110,11 +110,11 @@ export default function BlockExplorerPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-700">
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-voyager-gold">Year</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-voyager-gold">Annual Emission</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-voyager-gold">Block Reward</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-voyager-gold">Cumulative Distributed</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-voyager-gold">Pool Remaining</th>
+                    <th className="px-3 sm:px-6 py-4 text-left text-sm font-semibold text-voyager-gold">Year</th>
+                    <th className="px-3 sm:px-6 py-4 text-right text-sm font-semibold text-voyager-gold">Annual Emission</th>
+                    <th className="px-3 sm:px-6 py-4 text-right text-sm font-semibold text-voyager-gold">Block Reward</th>
+                    <th className="px-3 sm:px-6 py-4 text-right text-sm font-semibold text-voyager-gold">Cumulative Distributed</th>
+                    <th className="px-3 sm:px-6 py-4 text-right text-sm font-semibold text-voyager-gold">Pool Remaining</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -125,19 +125,19 @@ export default function BlockExplorerPage() {
                         index % 2 === 0 ? 'bg-surface/30' : ''
                       }`}
                     >
-                      <td className="px-6 py-4 text-left font-medium text-gray-200">
+                      <td className="px-3 sm:px-6 py-4 text-left font-medium text-gray-200">
                         Year {row.year}
                       </td>
-                      <td className="px-6 py-4 text-right text-gray-300">
+                      <td className="px-3 sm:px-6 py-4 text-right text-gray-300">
                         {formatPOHAmount(row.annual)}
                       </td>
-                      <td className="px-6 py-4 text-right text-accent">
+                      <td className="px-3 sm:px-6 py-4 text-right text-accent">
                         {row.blockReward.toFixed(2)} POH
                       </td>
-                      <td className="px-6 py-4 text-right text-charity-green">
+                      <td className="px-3 sm:px-6 py-4 text-right text-charity-green">
                         {formatPOHAmount(row.cumulative)}
                       </td>
-                      <td className="px-6 py-4 text-right text-gray-400">
+                      <td className="px-3 sm:px-6 py-4 text-right text-gray-400">
                         {formatPOHAmount(row.remaining)}
                       </td>
                     </tr>
@@ -173,7 +173,7 @@ export default function BlockExplorerPage() {
             <span className="gradient-text-animated">Voyager Death Projections</span>
           </h2>
           <p className="text-gray-300 text-center max-w-2xl mx-auto mb-12">
-            NASA predicts Voyager 1 will lose power sometime between 2025-2030. Here's what happens to POH
+            NASA predicts Voyager 1 will lose power sometime between 2030-2036. Here's what happens to POH
             at different decommission scenarios.
           </p>
         </FadeIn>
@@ -309,32 +309,35 @@ export default function BlockExplorerPage() {
               </p>
 
               <p>
-                Whatever POH remains undistributed in the Rewards Pool gets split into two parts:
+                Whatever POH remains undistributed in the Rewards Pool is subject to a DAO vote
+                on <strong>&ldquo;The Transition&rdquo;</strong> &mdash; a one-time governance proposal
+                to convert the remaining rewards into the Voyager Chase Fund.
               </p>
 
               <div className="bg-surface/50 rounded-lg p-6 my-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <div className="text-2xl font-bold text-accent mb-2">50% → Voyager Chase Fund</div>
+                    <div className="text-2xl font-bold text-accent mb-2">Voyager Chase Fund</div>
                     <div className="text-sm text-gray-400">
-                      Unlocked and available for the community to use in pursuit of Voyager 1.
-                      This fund can support interstellar missions, space tech R&D, or other ventures
-                      that continue humanity's reach into the cosmos.
+                      The DAO votes to redirect remaining rewards to fund real interstellar research.
+                      Goal: send an AI-guided probe to intercept Voyager 1. The mathematically
+                      unreachable ~1.54B POH acts as the seed fund from day one.
                     </div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-gray-400 mb-2">50% → Locked Forever</div>
+                    <div className="text-2xl font-bold text-gray-400 mb-2">Permanently Locked</div>
                     <div className="text-sm text-gray-400">
-                      Permanently removed from circulation. Burned. A tribute to the probe that gave
-                      us the stars—and to the emissions curve we'll never get back.
+                      The ~1.54B POH that RTG decay math makes unreachable stays locked in the
+                      contract forever &mdash; intentional scarcity that becomes the seed capital
+                      for the Chase Fund.
                     </div>
                   </div>
                 </div>
               </div>
 
               <p>
-                The earlier Voyager dies, the larger the Chase Fund. The longer it survives, the more POH
-                gets distributed through mining—and the less remains for the final split.
+                The earlier Voyager dies, the more POH remains in the rewards pool for the Chase Fund.
+                The longer it survives, the more POH gets distributed through mining.
               </p>
 
               <p className="text-center font-semibold text-voyager-gold pt-4">

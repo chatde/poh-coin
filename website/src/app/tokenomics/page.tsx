@@ -179,7 +179,7 @@ export default function TokenomicsPage() {
                   <p className="mt-2 text-3xl font-extrabold tracking-tight text-voyager-gold">
                     <CountUp end={12.263} duration={2} decimals={3} suffix="B" />
                   </p>
-                  <p className="mt-1 text-xs text-foreground/40">50% of supply for block mining</p>
+                  <p className="mt-1 text-xs text-foreground/50">50% of supply for block mining</p>
                 </div>
               </TiltCard>
             </StaggerChild>
@@ -190,7 +190,7 @@ export default function TokenomicsPage() {
                   <p className="mt-2 text-3xl font-extrabold tracking-tight text-charity-green">
                     <CountUp end={MAX_DISTRIBUTABLE / 1e9} duration={2.5} decimals={2} suffix="B" />
                   </p>
-                  <p className="mt-1 text-xs text-foreground/40">RTG decay convergence limit</p>
+                  <p className="mt-1 text-xs text-foreground/50">RTG decay convergence limit</p>
                 </div>
               </TiltCard>
             </StaggerChild>
@@ -201,7 +201,7 @@ export default function TokenomicsPage() {
                   <p className="mt-2 text-3xl font-extrabold tracking-tight text-accent-light">
                     <CountUp end={PERMANENTLY_LOCKED / 1e9} duration={2} decimals={2} suffix="B" />
                   </p>
-                  <p className="mt-1 text-xs text-foreground/40">Chase Fund seed forever</p>
+                  <p className="mt-1 text-xs text-foreground/50">Chase Fund seed forever</p>
                 </div>
               </TiltCard>
             </StaggerChild>
@@ -212,7 +212,7 @@ export default function TokenomicsPage() {
                   <p className="mt-2 text-3xl font-extrabold tracking-tight text-foreground">
                     <CountUp end={BLOCKS_PER_DAY} duration={2} suffix="" />
                   </p>
-                  <p className="mt-1 text-xs text-foreground/40">~{BLOCK_SIZE_KM.toLocaleString()} km each</p>
+                  <p className="mt-1 text-xs text-foreground/50">~{BLOCK_SIZE_KM.toLocaleString()} km each</p>
                 </div>
               </TiltCard>
             </StaggerChild>
@@ -271,7 +271,7 @@ export default function TokenomicsPage() {
                       {BLOCK_REWARD_SPLIT.SCIENCE_BONUS * 100}%
                     </div>
                   </div>
-                  <div className="mt-2 flex justify-between text-[10px] text-foreground/40">
+                  <div className="mt-2 flex justify-between text-[10px] text-foreground/50">
                     <span>Equation Solver</span>
                     <span>Compute Contributors</span>
                     <span>F@H/BOINC Bonus</span>
@@ -421,29 +421,29 @@ export default function TokenomicsPage() {
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="border-b border-surface-light">
-                        <th className="px-6 py-4 font-semibold text-accent-light">Year</th>
-                        <th className="px-6 py-4 font-semibold text-accent-light">Annual Emission</th>
-                        <th className="px-6 py-4 font-semibold text-accent-light">POH / Block</th>
-                        <th className="px-6 py-4 font-semibold text-accent-light">Cumulative</th>
-                        <th className="px-6 py-4 font-semibold text-accent-light">Pool Remaining</th>
+                        <th className="px-3 sm:px-6 py-4 font-semibold text-accent-light">Year</th>
+                        <th className="px-3 sm:px-6 py-4 font-semibold text-accent-light">Annual Emission</th>
+                        <th className="px-3 sm:px-6 py-4 font-semibold text-accent-light">POH / Block</th>
+                        <th className="px-3 sm:px-6 py-4 font-semibold text-accent-light">Cumulative</th>
+                        <th className="px-3 sm:px-6 py-4 font-semibold text-accent-light">Pool Remaining</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-surface-light text-foreground/80">
                       {schedule.map((row) => (
                         <tr key={row.year} className="hover:bg-surface/30 transition-colors">
-                          <td className="px-6 py-3 font-medium text-foreground">{row.year}</td>
-                          <td className="px-6 py-3 font-mono text-voyager-gold">{formatPOHAmount(row.annual, 0)}</td>
-                          <td className="px-6 py-3 font-mono text-accent-light">{formatPOHAmount(row.blockReward, 0)}</td>
-                          <td className="px-6 py-3 font-mono">{formatPOHAmount(row.cumulative, 2)}</td>
-                          <td className="px-6 py-3 font-mono text-charity-green">{formatPOHAmount(row.remaining, 2)}</td>
+                          <td className="px-3 sm:px-6 py-3 font-medium text-foreground">{row.year}</td>
+                          <td className="px-3 sm:px-6 py-3 font-mono text-voyager-gold">{formatPOHAmount(row.annual, 0)}</td>
+                          <td className="px-3 sm:px-6 py-3 font-mono text-accent-light">{formatPOHAmount(row.blockReward, 0)}</td>
+                          <td className="px-3 sm:px-6 py-3 font-mono">{formatPOHAmount(row.cumulative, 2)}</td>
+                          <td className="px-3 sm:px-6 py-3 font-mono text-charity-green">{formatPOHAmount(row.remaining, 2)}</td>
                         </tr>
                       ))}
                       <tr className="bg-surface/20 border-t-2 border-accent/20">
-                        <td className="px-6 py-3 font-bold text-foreground">Forever</td>
-                        <td className="px-6 py-3 font-mono text-voyager-gold">&rarr; 0</td>
-                        <td className="px-6 py-3 font-mono text-accent-light">&rarr; 0</td>
-                        <td className="px-6 py-3 font-mono">~{formatPOHAmount(MAX_DISTRIBUTABLE, 2)}</td>
-                        <td className="px-6 py-3 font-mono font-bold text-charity-green">~{formatPOHAmount(PERMANENTLY_LOCKED, 2)}</td>
+                        <td className="px-3 sm:px-6 py-3 font-bold text-foreground">Forever</td>
+                        <td className="px-3 sm:px-6 py-3 font-mono text-voyager-gold">&rarr; 0</td>
+                        <td className="px-3 sm:px-6 py-3 font-mono text-accent-light">&rarr; 0</td>
+                        <td className="px-3 sm:px-6 py-3 font-mono">~{formatPOHAmount(MAX_DISTRIBUTABLE, 2)}</td>
+                        <td className="px-3 sm:px-6 py-3 font-mono font-bold text-charity-green">~{formatPOHAmount(PERMANENTLY_LOCKED, 2)}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -540,8 +540,8 @@ export default function TokenomicsPage() {
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="border-b border-surface-light">
-                        <th className="px-6 py-3 font-semibold text-accent-light">Contract</th>
-                        <th className="px-6 py-3 font-semibold text-accent-light">Address</th>
+                        <th className="px-3 sm:px-6 py-3 font-semibold text-accent-light">Contract</th>
+                        <th className="px-3 sm:px-6 py-3 font-semibold text-accent-light">Address</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-surface-light text-foreground/80">
@@ -551,10 +551,12 @@ export default function TokenomicsPage() {
                         { name: "POHCharity", addr: CONTRACTS.charity },
                         { name: "POHVesting", addr: CONTRACTS.vesting },
                         { name: "POHNodeRegistry", addr: CONTRACTS.registry },
+                        { name: "TimelockController", addr: "0x64981B544a20d6933466c363dD175cA1FaD96Bb6" },
+                        { name: "POHGovernor", addr: "0x7C96Ed675033F15a53557f1d0190e00B19522e6e" },
                       ].map((c) => (
                         <tr key={c.name} className="hover:bg-surface/30 transition-colors">
-                          <td className="px-6 py-3 font-medium text-foreground">{c.name}</td>
-                          <td className="px-6 py-3">
+                          <td className="px-3 sm:px-6 py-3 font-medium text-foreground">{c.name}</td>
+                          <td className="px-3 sm:px-6 py-3">
                             <a href={`${BLOCK_EXPLORER}/address/${c.addr}`} target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-accent-light underline underline-offset-2 hover:text-accent break-all">
                               {c.addr}
                             </a>

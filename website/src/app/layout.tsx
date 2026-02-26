@@ -19,6 +19,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://projectpoh.com"),
   title: "Project POH — Pursuit of Happiness Coin",
   description:
     "A charity cryptocurrency funding environmental, humanitarian, educational, and health causes — with tokenomics tied to Voyager 1's interstellar journey.",
