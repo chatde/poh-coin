@@ -2,6 +2,7 @@
 
 import { Suspense, useRef, useCallback, useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
+import { Environment, Sparkles } from "@react-three/drei";
 import * as THREE from "three";
 import { VoyagerModel } from "./VoyagerModel";
 import { EngineTrail } from "./EngineTrail";
@@ -70,11 +71,11 @@ export function VoyagerScene() {
 
       {/* Layer 3 — Three.js Canvas */}
       <Canvas
-        dpr={[1, 1.5]}
+        dpr={[1, 2]}
         gl={{
-          antialias: false,
+          antialias: true,
           alpha: true,
-          powerPreference: "low-power",
+          powerPreference: "high-performance",
         }}
         camera={{ position: [0, 0, 10], fov: 50 }}
         frameloop={reducedMotion ? "never" : "always"}
@@ -87,18 +88,36 @@ export function VoyagerScene() {
           pointerEvents: "none",
         }}
       >
-        {/* Lighting */}
-        <ambientLight intensity={0.15} />
+        {/* HDRI environment — metals need reflections */}
+        <Environment files="/env/space.hdr" environmentIntensity={0.4} />
+
+        {/* 3-point cinematic lighting */}
+        <ambientLight intensity={0.1} />
+        {/* Key light — warm sun */}
         <directionalLight
           position={[8, 4, 6]}
-          intensity={0.8}
+          intensity={1.2}
           color={0xfff8e7}
+        />
+        {/* Fill light — cool blue */}
+        <directionalLight
+          position={[-6, 2, 4]}
+          intensity={0.3}
+          color="#b0c4de"
+        />
+        {/* Rim light — gold backlight for dramatic silhouette edge glow */}
+        <directionalLight
+          position={[-4, -2, -6]}
+          intensity={0.5}
+          color="#f59e0b"
         />
 
         <Suspense fallback={null}>
           <VoyagerModel positionRef={voyagerPos} mouseRef={mouseRef} />
           <EngineTrail positionRef={voyagerPos} />
           <ShootingStars3D />
+          {/* Ambient stellar dust particles */}
+          <Sparkles count={80} scale={20} size={1.5} speed={0.3} color="#ffffff" opacity={0.4} />
           <SceneEffects />
         </Suspense>
       </Canvas>

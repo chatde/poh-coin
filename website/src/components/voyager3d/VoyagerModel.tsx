@@ -14,6 +14,7 @@ interface VoyagerModelProps {
 /**
  * Procedural Voyager-inspired spacecraft built from Three.js primitives.
  * Custom design — no NASA IP. POH brand colors (gold, indigo, green).
+ * Photorealistic materials: gold thermal foil, reflective dish, nuclear RTG glow.
  */
 export function VoyagerModel({ positionRef, mouseRef }: VoyagerModelProps) {
   const groupRef = useRef<THREE.Group>(null);
@@ -22,58 +23,63 @@ export function VoyagerModel({ positionRef, mouseRef }: VoyagerModelProps) {
 
   /* Pre-compute materials once */
   const materials = useMemo(() => ({
-    bus: new THREE.MeshStandardMaterial({
-      color: 0x141830,
-      metalness: 0.7,
-      roughness: 0.3,
+    bus: new THREE.MeshPhysicalMaterial({
+      color: 0x8b7d3c,
+      metalness: 0.85,
+      roughness: 0.25,
+      envMapIntensity: 1.5,
     }),
-    dish: new THREE.MeshStandardMaterial({
+    dish: new THREE.MeshPhysicalMaterial({
       color: 0xe8e8ec,
-      metalness: 0.4,
-      roughness: 0.5,
-      emissive: 0xf59e0b,
-      emissiveIntensity: 0.08,
+      metalness: 0.5,
+      roughness: 0.2,
+      clearcoat: 0.8,
+      envMapIntensity: 1.5,
     }),
-    dishRim: new THREE.MeshStandardMaterial({
+    dishRim: new THREE.MeshPhysicalMaterial({
       color: 0xf59e0b,
       emissive: 0xf59e0b,
-      emissiveIntensity: 0.4,
-      metalness: 0.6,
-      roughness: 0.3,
+      emissiveIntensity: 0.6,
+      metalness: 0.7,
+      roughness: 0.25,
+      envMapIntensity: 1.2,
     }),
-    boom: new THREE.MeshStandardMaterial({
+    boom: new THREE.MeshPhysicalMaterial({
       color: 0x8888a0,
-      metalness: 0.3,
-      roughness: 0.7,
+      metalness: 0.6,
+      roughness: 0.25,
+      envMapIntensity: 1.2,
     }),
-    rtg: new THREE.MeshStandardMaterial({
+    rtg: new THREE.MeshPhysicalMaterial({
       color: 0x1a1a2e,
       emissive: 0xff4500,
-      emissiveIntensity: 0.3,
+      emissiveIntensity: 0.5,
       metalness: 0.5,
       roughness: 0.4,
     }),
-    goldenRecord: new THREE.MeshStandardMaterial({
+    goldenRecord: new THREE.MeshPhysicalMaterial({
       color: 0xf59e0b,
       emissive: 0xf59e0b,
-      emissiveIntensity: 0.5,
-      metalness: 0.8,
-      roughness: 0.2,
+      emissiveIntensity: 0.7,
+      metalness: 0.95,
+      roughness: 0.08,
+      envMapIntensity: 2.0,
     }),
-    instrument: new THREE.MeshStandardMaterial({
+    instrument: new THREE.MeshPhysicalMaterial({
       color: 0x6366f1,
       metalness: 0.4,
       roughness: 0.5,
     }),
-    instrumentGreen: new THREE.MeshStandardMaterial({
+    instrumentGreen: new THREE.MeshPhysicalMaterial({
       color: 0x10b981,
       metalness: 0.4,
       roughness: 0.5,
     }),
-    strutLine: new THREE.LineBasicMaterial({
+    strut: new THREE.MeshPhysicalMaterial({
       color: 0xaaaacc,
-      transparent: true,
-      opacity: 0.4,
+      metalness: 0.5,
+      roughness: 0.35,
+      envMapIntensity: 1.0,
     }),
   }), []);
 
@@ -110,15 +116,15 @@ export function VoyagerModel({ positionRef, mouseRef }: VoyagerModelProps) {
 
   return (
     <group ref={groupRef} scale={0.4}>
-      {/* ── Main Bus (central body) ── */}
+      {/* ── Main Bus (central body — gold thermal foil) ── */}
       <mesh material={materials.bus}>
         <boxGeometry args={[3, 0.6, 0.8]} />
       </mesh>
 
       {/* ── High-Gain Antenna ── */}
       {/* Stalk */}
-      <mesh position={[2.2, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={materials.boom}>
-        <cylinderGeometry args={[0.03, 0.03, 1.2, 6]} />
+      <mesh position={[2.2, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={materials.strut}>
+        <cylinderGeometry args={[0.03, 0.03, 1.2, 16]} />
       </mesh>
       {/* Dish */}
       <mesh ref={dishRef} position={[2.8, 0, 0]} rotation={[0, Math.PI / 2, 0]} material={materials.dish}>
@@ -130,12 +136,12 @@ export function VoyagerModel({ positionRef, mouseRef }: VoyagerModelProps) {
       </mesh>
       {/* Feed point */}
       <mesh position={[3.5, 0, 0]} material={materials.goldenRecord}>
-        <sphereGeometry args={[0.1, 12, 12]} />
+        <sphereGeometry args={[0.1, 32, 32]} />
       </mesh>
 
       {/* ── Magnetometer Boom (long arm upward-left) ── */}
       <mesh position={[-0.8, -1.4, 0]} rotation={[0, 0, -0.5]} material={materials.boom}>
-        <cylinderGeometry args={[0.02, 0.02, 2.8, 6]} />
+        <cylinderGeometry args={[0.02, 0.02, 2.8, 16]} />
       </mesh>
       {/* Magnetometer sensor */}
       <mesh position={[-2.1, -2.6, 0]} material={materials.instrument}>
@@ -144,7 +150,7 @@ export function VoyagerModel({ positionRef, mouseRef }: VoyagerModelProps) {
 
       {/* ── Science Instrument Boom (shorter, opposite side) ── */}
       <mesh position={[-0.8, 1.4, 0]} rotation={[0, 0, 0.5]} material={materials.boom}>
-        <cylinderGeometry args={[0.02, 0.02, 2.4, 6]} />
+        <cylinderGeometry args={[0.02, 0.02, 2.4, 16]} />
       </mesh>
       {/* Scan platform (camera cluster) */}
       <group position={[-2.0, 2.3, 0]}>
@@ -158,20 +164,20 @@ export function VoyagerModel({ positionRef, mouseRef }: VoyagerModelProps) {
 
       {/* ── RTG Power Boom 1 ── */}
       <mesh position={[-2.2, -0.8, 0]} rotation={[0, 0, -0.3]} material={materials.boom}>
-        <cylinderGeometry args={[0.03, 0.03, 2, 6]} />
+        <cylinderGeometry args={[0.03, 0.03, 2, 16]} />
       </mesh>
       {/* RTG unit 1 */}
       <mesh position={[-3.1, -1.3, 0]} material={materials.rtg}>
-        <cylinderGeometry args={[0.15, 0.15, 0.8, 8]} />
+        <cylinderGeometry args={[0.15, 0.15, 0.8, 16]} />
       </mesh>
 
       {/* ── RTG Power Boom 2 ── */}
       <mesh position={[-2.2, 0.8, 0]} rotation={[0, 0, 0.3]} material={materials.boom}>
-        <cylinderGeometry args={[0.03, 0.03, 2, 6]} />
+        <cylinderGeometry args={[0.03, 0.03, 2, 16]} />
       </mesh>
       {/* RTG unit 2 */}
       <mesh position={[-3.1, 1.3, 0]} material={materials.rtg}>
-        <cylinderGeometry args={[0.15, 0.15, 0.8, 8]} />
+        <cylinderGeometry args={[0.15, 0.15, 0.8, 16]} />
       </mesh>
 
       {/* ── Golden Record (POH brand gold!) ── */}
