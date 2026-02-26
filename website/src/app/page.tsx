@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { VoyagerTracker } from "@/components/VoyagerTracker";
-import { VoyagerBackground } from "@/components/VoyagerBackground";
+import { VoyagerSceneLazy } from "@/components/voyager3d/VoyagerSceneLazy";
 import { StarField } from "@/components/StarField";
 import { FadeIn } from "@/components/motion/FadeIn";
 import { CountUp } from "@/components/motion/CountUp";
@@ -305,9 +305,9 @@ export default function Home() {
           <StarField />
         </div>
 
-        {/* Voyager spacecraft + parallax layers + particle trails */}
+        {/* Voyager spacecraft + parallax layers + particle trails (3D) */}
         <div className="absolute inset-0 -z-20">
-          <VoyagerBackground />
+          <VoyagerSceneLazy />
         </div>
 
         {/* Dark gradient overlay for readability */}

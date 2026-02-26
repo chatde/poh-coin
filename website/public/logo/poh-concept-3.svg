@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="c3-indigo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a5b4fc"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="c3-gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="c3-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#0c0a1d"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded square badge -->
+  <rect x="16" y="16" width="480" height="480" rx="80" fill="url(#c3-bg)" stroke="#6366f1" stroke-width="6" opacity="0.95"/>
+  <!-- Inner border -->
+  <rect x="32" y="32" width="448" height="448" rx="68" fill="none" stroke="#6366f1" stroke-width="1.5" opacity="0.15"/>
+  <!-- Bold "P" letterform -->
+  <path d="M 160 340 L 160 140 L 260 140 C 320 140 350 170 350 210 C 350 255 315 285 260 285 L 200 285" fill="none" stroke="url(#c3-indigo)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Trajectory arrow breaking free from P -->
+  <line x1="300" y1="220" x2="380" y2="140" stroke="url(#c3-gold)" stroke-width="8" stroke-linecap="round"/>
+  <!-- Arrow tip -->
+  <polygon points="380,120 400,130 385,148" fill="#f59e0b"/>
+  <!-- Arrow trail particle dots -->
+  <circle cx="285" cy="235" r="5" fill="#10b981" opacity="0.8"/>
+  <circle cx="268" cy="248" r="4" fill="#10b981" opacity="0.6"/>
+  <circle cx="252" cy="258" r="3.5" fill="#10b981" opacity="0.45"/>
+  <circle cx="238" cy="266" r="3" fill="#10b981" opacity="0.3"/>
+  <circle cx="225" cy="272" r="2.5" fill="#10b981" opacity="0.18"/>
+  <!-- POH text -->
+  <text x="256" y="400" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="800" font-size="50" fill="white" letter-spacing="10">POH</text>
+  <!-- Tagline -->
+  <text x="256" y="432" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="400" font-size="14" fill="#a5b4fc" letter-spacing="5" opacity="0.7">PURSUIT ARROW</text>
+</svg>

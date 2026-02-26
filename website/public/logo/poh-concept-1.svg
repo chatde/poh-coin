@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="c1-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#0f0a2e"/>
+    </linearGradient>
+    <linearGradient id="c1-gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#c1-bg)" stroke="#6366f1" stroke-width="12"/>
+  <!-- Inner ring -->
+  <circle cx="256" cy="256" r="220" fill="none" stroke="#6366f1" stroke-width="2" opacity="0.3"/>
+  <!-- Stylized antenna dish (custom, not NASA) -->
+  <ellipse cx="256" cy="230" rx="70" ry="90" fill="none" stroke="url(#c1-gold)" stroke-width="5" transform="rotate(-15 256 230)"/>
+  <!-- Dish stalk -->
+  <line x1="256" y1="230" x2="310" y2="230" stroke="#e2e8f0" stroke-width="3" opacity="0.6"/>
+  <!-- Feed point -->
+  <circle cx="310" cy="230" r="6" fill="#f59e0b"/>
+  <!-- Bus body -->
+  <rect x="220" y="220" width="72" height="20" rx="3" fill="#1e1b4b" stroke="#a5b4fc" stroke-width="2" opacity="0.8"/>
+  <!-- Signal arc 1 -->
+  <path d="M 330 230 A 40 40 0 0 1 330 190" fill="none" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+  <!-- Signal arc 2 -->
+  <path d="M 350 240 A 60 60 0 0 1 350 180" fill="none" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round" opacity="0.65"/>
+  <!-- Signal arc 3 -->
+  <path d="M 370 250 A 80 80 0 0 1 370 170" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
+  <!-- POH text -->
+  <text x="256" y="370" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="800" font-size="60" fill="white" letter-spacing="8">POH</text>
+  <!-- Tagline -->
+  <text x="256" y="405" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="400" font-size="16" fill="#a5b4fc" letter-spacing="4" opacity="0.8">VOYAGER SIGNAL</text>
+</svg>
