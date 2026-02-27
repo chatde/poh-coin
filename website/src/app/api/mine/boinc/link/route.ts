@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateCPID, fetchBOINCData } from '@/lib/boinc-data';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,26 +43,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Store the link (in-memory for now, will use Supabase later)
-    // This is a placeholder - actual implementation will write to database
-    const linkData = {
-      walletAddress: walletAddress.toLowerCase(),
+    // Store the link in Supabase
+    const { error: upsertError } = await supabase.from('boinc_links').upsert({
+      wallet_address: walletAddress.toLowerCase(),
       cpid: trimmedCpid,
-      data: boincData,
-      linkedAt: new Date().toISOString()
-    };
+      projects: boincData.projects,
+      total_credit: boincData.totalCredit,
+      last_synced_at: boincData.lastSynced.toISOString(),
+      verified: true
+    }, { onConflict: 'wallet_address' });
 
-    // TODO: When Supabase migration is run, replace this with:
-    // await supabase.from('boinc_links').upsert({
-    //   wallet_address: walletAddress.toLowerCase(),
-    //   cpid: trimmedCpid,
-    //   projects: boincData.projects,
-    //   total_credit: boincData.totalCredit,
-    //   last_synced_at: boincData.lastSynced.toISOString(),
-    //   verified: true
-    // });
-
-    console.log('BOINC link created:', linkData);
+    if (upsertError) {
+      console.error('BOINC link upsert error:', upsertError);
+      return NextResponse.json(
+        { error: 'Failed to save BOINC link' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
