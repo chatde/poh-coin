@@ -115,7 +115,7 @@ export function VoyagerModel({ positionRef, mouseRef }: VoyagerModelProps) {
   });
 
   return (
-    <group ref={groupRef} scale={0.4}>
+    <group ref={groupRef} scale={0.133}>
       {/* ── Main Bus (central body — gold thermal foil) ── */}
       <mesh material={materials.bus}>
         <boxGeometry args={[3, 0.6, 0.8]} />
