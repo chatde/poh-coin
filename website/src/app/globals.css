@@ -349,6 +349,29 @@ body::after {
 
 /* POH is always dark mode — :root values are already dark-appropriate */
 
+/* Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-light) var(--background);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-light);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

@@ -140,9 +140,27 @@ export function Footer() {
             solicitation, or a recommendation to buy or sell any asset. Not
             financial advice. Not an investment.
           </p>
-          <p className="text-xs text-foreground/50">
-            &copy; {currentYear} Project POH. All rights reserved.
-          </p>
+          <div className="flex items-center gap-4 text-xs text-foreground/50">
+            <span>&copy; {currentYear} Project POH. All rights reserved.</span>
+            <span className="text-foreground/20">&middot;</span>
+            <a
+              href="https://ghb.ventures"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-accent-light"
+            >
+              GHB Ventures
+            </a>
+            <span className="text-foreground/20">&middot;</span>
+            <a
+              href="https://chatde.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-accent-light"
+            >
+              chatde.dev
+            </a>
+          </div>
         </div>
       </div>
     </footer>
