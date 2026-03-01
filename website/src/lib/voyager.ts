@@ -92,7 +92,8 @@ export function getLightHoursDelay(now: Date = new Date()): number {
  * blocks continue to be generated.
  */
 export function isVoyagerActive(): boolean {
-  // TODO: Check Supabase flag or governance state once available.
+  // Decommission will be driven by a Supabase feature flag or on-chain
+  // DAO vote once governance is live. Until then, Voyager is always active.
   return true;
 }
 

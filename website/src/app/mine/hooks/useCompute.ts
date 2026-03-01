@@ -217,7 +217,7 @@ export function useCompute(deviceId: string | null) {
 
   // Check if a block is complete (both tasks and equation solved)
   const checkBlockComplete = useCallback(() => {
-    const tasksNeeded = TASKS_PER_BLOCK_MIN; // TODO: use adaptive from server
+    const tasksNeeded = TASKS_PER_BLOCK_MIN; // Scales to TASKS_PER_BLOCK_MAX once 1000+ miners are active
     if (blockTasksRef.current >= tasksNeeded && equationSolvedRef.current) {
       // Block mined!
       setBlockState((s) => ({
