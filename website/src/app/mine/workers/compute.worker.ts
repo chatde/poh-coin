@@ -45,6 +45,12 @@ interface ComputationProof {
   workerVersion: string;
 }
 
+interface ErrorMessage {
+  type: "error";
+  taskId: string | null;
+  error: string;
+}
+
 // ── Deterministic PRNG (xorshift128+) ────────────────────────────────
 
 class Xorshift128Plus {
@@ -594,70 +600,101 @@ self.postMessage = (msg: unknown) => {
 };
 
 self.onmessage = async (event: MessageEvent<TaskMessage>) => {
-  const { type, taskId, taskType, payload } = event.data;
+  try {
+    const { type, taskId, taskType, payload } = event.data;
 
-  if (type !== "run") return;
+    if (type !== "run") return;
 
-  currentTaskId = taskId;
-  const startTime = performance.now();
+    currentTaskId = taskId;
+    const startTime = performance.now();
 
-  // Create deterministic RNG from seed (if provided)
-  const seed = (payload.seed as string) || taskId;
-  const rng = new Xorshift128Plus(seed);
+    // Create deterministic RNG from seed (if provided)
+    const seed = (payload.seed as string) || taskId;
+    const rng = new Xorshift128Plus(seed);
 
-  // Compute input hash for proof
-  const inputHash = await hashData(JSON.stringify(payload));
+    // Compute input hash for proof
+    const inputHash = await hashData(JSON.stringify(payload));
 
-  let result: unknown;
-  const intermediateHashes: string[] = [];
+    let result: unknown;
+    const intermediateHashes: string[] = [];
 
-  switch (taskType) {
-    case "protein":
-      result = computeProtein(payload, rng);
-      break;
-    case "climate":
-      result = computeClimate(payload);
-      break;
-    case "signal":
-      result = computeSignal(payload, rng);
-      break;
-    case "drugscreen":
-      result = computeDrugScreen(payload);
-      break;
-    case "fitness_verify":
-      result = verifyFitness(payload);
-      break;
-    default:
-      result = { error: `Unknown task type: ${taskType}` };
+    switch (taskType) {
+      case "protein":
+        result = computeProtein(payload, rng);
+        break;
+      case "climate":
+        result = computeClimate(payload);
+        break;
+      case "signal":
+        result = computeSignal(payload, rng);
+        break;
+      case "drugscreen":
+        result = computeDrugScreen(payload);
+        break;
+      case "fitness_verify":
+        result = verifyFitness(payload);
+        break;
+      default:
+        result = { error: `Unknown task type: ${taskType}` };
+    }
+
+    const computeTimeMs = Math.round(performance.now() - startTime);
+
+    // Compute output hash for proof — protected individually so a hashing
+    // failure doesn't silently swallow the entire result.
+    let outputHash = "";
+    try {
+      outputHash = await hashData(JSON.stringify(result));
+    } catch (hashErr) {
+      const msg = hashErr instanceof Error ? hashErr.message : String(hashErr);
+      originalPostMessage({
+        type: "error",
+        taskId,
+        error: `Output hashing failed: ${msg}`,
+      } as ErrorMessage);
+      return;
+    }
+
+    // Generate intermediate hashes (we approximate 25/50/75% checkpoints)
+    try {
+      const resultStr = JSON.stringify(result);
+      const quarter = Math.floor(resultStr.length / 4);
+      intermediateHashes.push(
+        await hashData(resultStr.slice(0, quarter)),
+        await hashData(resultStr.slice(0, quarter * 2)),
+        await hashData(resultStr.slice(0, quarter * 3)),
+      );
+    } catch (hashErr) {
+      const msg = hashErr instanceof Error ? hashErr.message : String(hashErr);
+      originalPostMessage({
+        type: "error",
+        taskId,
+        error: `Intermediate hashing failed: ${msg}`,
+      } as ErrorMessage);
+      return;
+    }
+
+    const proof: ComputationProof = {
+      inputHash,
+      outputHash,
+      intermediateHashes,
+      computeTimeMs,
+      workerVersion: WORKER_VERSION,
+    };
+
+    originalPostMessage({
+      type: "result",
+      taskId,
+      result,
+      computeTimeMs,
+      proof,
+    } as ResultMessage);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    originalPostMessage({
+      type: "error",
+      taskId: currentTaskId,
+      error: message,
+    } as ErrorMessage);
   }
-
-  const computeTimeMs = Math.round(performance.now() - startTime);
-
-  // Compute output hash for proof
-  const outputHash = await hashData(JSON.stringify(result));
-
-  // Generate intermediate hashes (we approximate 25/50/75% checkpoints)
-  const resultStr = JSON.stringify(result);
-  const quarter = Math.floor(resultStr.length / 4);
-  intermediateHashes.push(
-    await hashData(resultStr.slice(0, quarter)),
-    await hashData(resultStr.slice(0, quarter * 2)),
-    await hashData(resultStr.slice(0, quarter * 3)),
-  );
-
-  const proof: ComputationProof = {
-    inputHash,
-    outputHash,
-    intermediateHashes,
-    computeTimeMs,
-    workerVersion: WORKER_VERSION,
-  };
-
-  originalPostMessage({
-    type: "result",
-    taskId,
-    result,
-    computeTimeMs,
-    proof,
-  } as ResultMessage);
 };

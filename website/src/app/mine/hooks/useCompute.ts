@@ -133,6 +133,9 @@ export function useCompute(deviceId: string | null) {
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
   const blockTasksRef = useRef(0);
   const equationSolvedRef = useRef(false);
+  // Stable ref to checkBlockComplete so startEquationWorker's message handler
+  // always calls the latest version without needing it in its deps array.
+  const checkBlockCompleteRef = useRef<() => void>(() => {});
 
   // Persist stats whenever they change
   useEffect(() => {
@@ -304,10 +307,11 @@ export function useCompute(deviceId: string | null) {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10_000);
       try {
+        const body = JSON.stringify({ deviceId, taskId, result, computeTimeMs, proof });
         await fetch("/api/mine/submit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ deviceId, taskId, result, computeTimeMs, proof }),
+          body,
           signal: controller.signal,
         });
         clearTimeout(timeout);
@@ -367,25 +371,41 @@ export function useCompute(deviceId: string | null) {
         }, 5 * 60 * 1000);
 
         const handler = (event: MessageEvent) => {
-          const msg = event.data;
-          if (msg.taskId !== task.task_id) return;
+          try {
+            const msg = event.data as Record<string, unknown>;
+            if (msg.taskId !== task.task_id) return;
 
-          if (msg.type === "progress") {
-            setState((s) => ({
-              ...s,
-              progress: msg.percent,
-              progressStep: msg.step,
-            }));
-          } else if (msg.type === "result") {
+            if (msg.type === "progress") {
+              setState((s) => ({
+                ...s,
+                progress: typeof msg.percent === "number" ? msg.percent : s.progress,
+                progressStep: typeof msg.step === "string" ? msg.step : s.progressStep,
+              }));
+            } else if (msg.type === "result") {
+              if (!resolved) {
+                resolved = true;
+                clearTimeout(workerTimeout);
+                worker.removeEventListener("message", handler);
+                resolve({
+                  result: msg.result,
+                  computeTimeMs: msg.computeTimeMs as number,
+                  proof: msg.proof,
+                });
+              }
+            } else if (msg.type === "error") {
+              if (!resolved) {
+                resolved = true;
+                clearTimeout(workerTimeout);
+                worker.removeEventListener("message", handler);
+                reject(new Error(typeof msg.error === "string" ? msg.error : "Worker error"));
+              }
+            }
+          } catch (handlerErr) {
             if (!resolved) {
               resolved = true;
               clearTimeout(workerTimeout);
               worker.removeEventListener("message", handler);
-              resolve({
-                result: msg.result,
-                computeTimeMs: msg.computeTimeMs,
-                proof: msg.proof,
-              });
+              reject(handlerErr instanceof Error ? handlerErr : new Error(String(handlerErr)));
             }
           }
         };
