@@ -92,9 +92,9 @@ export function useHeartbeat(deviceId: string | null) {
     if (isActiveRef.current) return;
     isActiveRef.current = true;
 
-    // Send immediately, then every 15 minutes
+    // Send immediately, then every 5 minutes (well within the 15-min active window)
     sendHeartbeat();
-    intervalRef.current = setInterval(sendHeartbeat, 15 * 60 * 1000);
+    intervalRef.current = setInterval(sendHeartbeat, 5 * 60 * 1000);
   }, [sendHeartbeat]);
 
   const stop = useCallback(() => {

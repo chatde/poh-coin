@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/heartbeat-check",
+      "schedule": "*/20 * * * *"
+    },
+    {
       "path": "/api/cron/quality-scores",
       "schedule": "0 3 * * 0"
     },
