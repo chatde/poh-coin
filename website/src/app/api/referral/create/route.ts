@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { generateReferralCode } from "@/lib/crypto";
 import { REFERRAL_DURATION_DAYS } from "@/lib/constants";
+import { checkRateLimit } from "@/lib/rate-limiter";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,6 +13,12 @@ export async function POST(req: NextRequest) {
     }
 
     const wallet = walletAddress.toLowerCase();
+
+    // Rate limit: max 5 code generation attempts per wallet per day
+    const rateLimitOk = await checkRateLimit(`referral:create:${wallet}`, 5, 24 * 60 * 60 * 1000);
+    if (!rateLimitOk) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+    }
 
     // Check if user already has an active referral code
     const { data: existing } = await supabase

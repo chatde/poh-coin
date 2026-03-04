@@ -4,10 +4,12 @@ import { createHash } from "crypto";
 
 /**
  * GET /api/research/results?taskId=xxx
- * GET /api/research/results?partnerId=xxx&limit=50
+ * GET /api/research/results?limit=50
  *
- * Retrieve results for completed research tasks.
- * Authenticated via API key in the Authorization header.
+ * Retrieve results for completed research tasks submitted by this partner.
+ * Authenticated via API key in the x-api-key header.
+ *
+ * Partner tasks are identified by partnerId stored in payload._meta.partnerId.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -34,15 +36,21 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
 
     if (taskId) {
-      // Single task result
+      // Single task result — verify this task belongs to the requesting partner
       const { data: task, error } = await supabase
         .from("compute_tasks")
-        .select("task_id, task_type, dataset_id, status, parameters, created_at")
+        .select("task_id, task_type, status, source, created_at, payload")
         .eq("task_id", taskId)
-        .eq("partner_id", partner.id)
+        .eq("source", "partner")
         .single();
 
       if (error || !task) {
+        return NextResponse.json({ error: "Task not found" }, { status: 404 });
+      }
+
+      // Verify partner ownership via payload._meta.partnerId
+      const meta = (task.payload as Record<string, unknown>)?._meta as Record<string, unknown> | undefined;
+      if (meta?.partnerId !== partner.id) {
         return NextResponse.json({ error: "Task not found" }, { status: 404 });
       }
 
@@ -54,7 +62,11 @@ export async function GET(req: NextRequest) {
         .eq("is_match", true);
 
       return NextResponse.json({
-        task,
+        taskId: task.task_id,
+        taskType: task.task_type,
+        status: task.status,
+        createdAt: task.created_at,
+        datasetId: (meta?.datasetId as string) ?? null,
         results: assignments || [],
         consensusReached: (assignments?.length || 0) >= 2,
         deviceCount: assignments?.length || 0,
@@ -65,25 +77,43 @@ export async function GET(req: NextRequest) {
             )
           : null,
         avgAiConfidence: assignments?.length
-          ? assignments.reduce((s, a) => s + (a.ai_confidence || 0), 0) /
+          ? assignments.reduce((s, a) => s + (Number(a.ai_confidence) || 0), 0) /
             assignments.length
           : null,
       });
     }
 
-    // Batch query — recent tasks for this partner
+    // Batch query — recent partner tasks (identified by source=partner and partnerId in payload)
     const { data: tasks } = await supabase
       .from("compute_tasks")
-      .select("task_id, task_type, dataset_id, status, created_at")
-      .eq("partner_id", partner.id)
+      .select("task_id, task_type, status, source, created_at, payload")
+      .eq("source", "partner")
       .order("created_at", { ascending: false })
-      .limit(limit);
+      .limit(limit * 3); // Over-fetch since we filter by partnerId in JS
+
+    // Filter to only this partner's tasks
+    const partnerTasks = (tasks || [])
+      .filter((t) => {
+        const meta = (t.payload as Record<string, unknown>)?._meta as Record<string, unknown> | undefined;
+        return meta?.partnerId === partner.id;
+      })
+      .slice(0, limit)
+      .map((t) => {
+        const meta = (t.payload as Record<string, unknown>)?._meta as Record<string, unknown> | undefined;
+        return {
+          taskId: t.task_id,
+          taskType: t.task_type,
+          status: t.status,
+          datasetId: (meta?.datasetId as string) ?? null,
+          createdAt: t.created_at,
+        };
+      });
 
     return NextResponse.json({
       partnerId: partner.id,
       partnerName: partner.name,
-      tasks: tasks || [],
-      count: tasks?.length || 0,
+      tasks: partnerTasks,
+      count: partnerTasks.length,
     });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

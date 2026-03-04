@@ -3,15 +3,16 @@ import { supabase } from "@/lib/supabase";
 import { shouldSpotCheck, spotCheckResult } from "@/lib/reference-compute";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limiter";
 
-const AI_VERIFIER_URL = process.env.AI_VERIFIER_URL || "http://localhost:8000";
+const AI_VERIFIER_URL = process.env.AI_VERIFIER_URL ?? null;
 
-/** Call the AI verification service. Returns null if unavailable. */
+/** Call the AI verification service. Returns null if unavailable or not configured. */
 async function callAiVerifier(
   taskType: string,
   result: unknown,
   computeTimeMs: number,
   peerResults: unknown[],
 ): Promise<{ confidence: number; flags: string[]; recommendation: string } | null> {
+  if (!AI_VERIFIER_URL) return null;
   try {
     const res = await fetch(`${AI_VERIFIER_URL}/verify`, {
       method: "POST",

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { checkRateLimit } from "@/lib/rate-limiter";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +11,12 @@ export async function POST(req: NextRequest) {
         { error: "validatorDeviceId, taskId, and isValid are required" },
         { status: 400 }
       );
+    }
+
+    // Rate limit: max 60 validations per hour per device (same as submit)
+    const rateLimitOk = await checkRateLimit(`validate:${validatorDeviceId}`, 60, 60 * 60 * 1000);
+    if (!rateLimitOk) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
     }
 
     // Verify the device is a tier 2 validator

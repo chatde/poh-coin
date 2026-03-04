@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { createHash, timingSafeEqual } from "crypto";
+import { createHash } from "crypto";
 
 /**
  * POST /api/research/submit
  *
  * Allows research partners to submit compute tasks for distributed processing.
- * Authenticated via API key in the Authorization header.
+ * Authenticated via API key in the x-api-key header.
  *
  * Body: { taskType, datasetId, parameters, callbackUrl? }
+ *
+ * Partner metadata (datasetId, callbackUrl, partnerId) is stored inside
+ * the payload JSONB field as _meta, since compute_tasks uses a generic schema.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -47,17 +50,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create the compute task
+    // Build payload — partner metadata stored in _meta to avoid schema conflicts.
+    // The compute_tasks table uses a single JSONB `payload` column for all task data.
+    const payload: Record<string, unknown> = {
+      ...(parameters || {}),
+      _meta: {
+        datasetId,
+        partnerId: partner.id,
+        callbackUrl: callbackUrl || null,
+        source: "partner",
+      },
+    };
+
+    // Create the compute task using the actual schema columns
     const { data: task, error: taskErr } = await supabase
       .from("compute_tasks")
       .insert({
         task_type: taskType,
-        dataset_id: datasetId,
-        parameters: parameters || {},
-        callback_url: callbackUrl || null,
+        payload,
         source: "partner",
-        partner_id: partner.id,
         status: "pending",
+        priority: 5,
+        seed: crypto.randomUUID(),
+        task_version: "2.0.0",
       })
       .select("task_id")
       .single();
@@ -66,8 +81,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: taskErr.message }, { status: 500 });
     }
 
-    // Increment partner task count
-    await supabase.rpc("increment_partner_tasks", { p_id: partner.id });
+    // Increment partner task count (best-effort — table may not exist yet)
+    await supabase.rpc("increment_partner_tasks", { p_id: partner.id }).maybeSingle();
 
     return NextResponse.json({
       taskId: task.task_id,

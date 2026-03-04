@@ -1,7 +1,10 @@
 import { ethers } from "ethers";
 
 // ── Network Config ──────────────────────────────────────────────────
-const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || "84532");
+// NEXT_PUBLIC_CHAIN_ID must be set in production (8453 = Base mainnet).
+// Defaults to Sepolia testnet (84532) only as a build-time fallback — Vercel
+// will inject the real value at runtime via environment variables.
+const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? "84532");
 export const IS_MAINNET = CHAIN_ID === 8453;
 
 const SEPOLIA_CONTRACTS = {

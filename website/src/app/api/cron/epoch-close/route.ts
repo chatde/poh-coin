@@ -50,13 +50,12 @@ interface WalletReward {
   vestingDurationDays: number;
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    // Verify cron secret
-    const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+async function runEpochClose(req: NextRequest): Promise<NextResponse> {
+  // Verify cron secret
+  const authHeader = req.headers.get("authorization");
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
     // 1. Get the active epoch
     const { data: epoch } = await supabase
@@ -520,6 +519,22 @@ export async function POST(req: NextRequest) {
         ? "Epoch closed. Merkle root staged on-chain. Activate in 24hrs."
         : "Epoch closed. Merkle root ready — on-chain staging requires manual step.",
     });
+}
+
+// GET — invoked by Vercel Cron (crons always use GET)
+export async function GET(req: NextRequest) {
+  try {
+    return await runEpochClose(req);
+  } catch (err) {
+    console.error("Epoch close error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+// POST — available for manual/external triggers
+export async function POST(req: NextRequest) {
+  try {
+    return await runEpochClose(req);
   } catch (err) {
     console.error("Epoch close error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
