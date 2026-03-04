@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
+interface ProofRow {
+  device_id: string;
+  points_earned: number;
+  nodes: { wallet_address: string } | null;
+}
+
+interface RewardRow {
+  wallet_address: string;
+  poh_amount: number;
+}
+
 export async function GET() {
   try {
     // Get current active epoch
@@ -12,17 +23,51 @@ export async function GET() {
 
     const epochNum = epoch?.epoch_number || 0;
 
-    // Top miners by total points (current epoch)
-    const { data: topMiners } = await supabase
-      .from("rewards")
-      .select("wallet_address, total_points, poh_amount")
+    // Top miners by total points (current epoch) — query proofs joined to nodes
+    const { data: proofRows } = await supabase
+      .from("proofs")
+      .select("device_id, points_earned, nodes(wallet_address)")
       .eq("epoch", epochNum)
-      .order("total_points", { ascending: false })
+      .not("nodes", "is", null);
+
+    // Aggregate by wallet
+    const walletPoints = new Map<string, number>();
+    (proofRows as ProofRow[] | null)?.forEach((p) => {
+      const wallet = p.nodes?.wallet_address;
+      if (!wallet) return;
+      walletPoints.set(wallet, (walletPoints.get(wallet) || 0) + Number(p.points_earned));
+    });
+
+    const topMiners = Array.from(walletPoints.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 50)
+      .map(([wallet_address, total_points]) => ({ wallet_address, total_points }));
+
+    // All-time miners — sum poh_amount from rewards table by wallet
+    const { data: allTimeData } = await supabase
+      .from("rewards")
+      .select("wallet_address, poh_amount")
+      .order("poh_amount", { ascending: false })
       .limit(50);
 
-    // Top miners by all-time earnings
-    const { data: allTimeMiners } = await supabase
-      .rpc("leaderboard_all_time", { limit_count: 50 });
+    const walletPoh = new Map<string, number>();
+    (allTimeData as RewardRow[] | null)?.forEach((r) => {
+      walletPoh.set(r.wallet_address, (walletPoh.get(r.wallet_address) || 0) + Number(r.poh_amount));
+    });
+
+    const allTimeMiners = Array.from(walletPoh.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 50)
+      .map(([wallet_address, poh_amount]) => ({ wallet_address, poh_amount }));
+
+    // Active miners — nodes with last_heartbeat within the last 15 minutes
+    const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { data: activeNodes } = await supabase
+      .from("nodes")
+      .select("wallet_address, device_id, tier, reputation")
+      .gte("last_heartbeat", cutoff)
+      .eq("is_active", true)
+      .order("reputation", { ascending: false });
 
     // Top validators by reputation
     const { data: topValidators } = await supabase
@@ -54,8 +99,9 @@ export async function GET() {
 
     return NextResponse.json({
       epoch: epochNum,
-      topMiners: topMiners || [],
-      allTimeMiners: allTimeMiners || [],
+      topMiners,
+      allTimeMiners,
+      activeMiners: activeNodes || [],
       topValidators: topValidators || [],
       topRegions,
     });

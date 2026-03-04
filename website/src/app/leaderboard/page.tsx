@@ -20,13 +20,21 @@ interface RegionEntry {
   deviceCount: number;
 }
 
-type Tab = "miners" | "alltime" | "validators" | "regions";
+interface ActiveMinerEntry {
+  wallet_address: string;
+  device_id: string;
+  tier: number;
+  reputation: number;
+}
+
+type Tab = "miners" | "alltime" | "active" | "validators" | "regions";
 
 export default function LeaderboardPage() {
   const [tab, setTab] = useState<Tab>("miners");
   const [epoch, setEpoch] = useState(0);
   const [topMiners, setTopMiners] = useState<MinerEntry[]>([]);
   const [allTimeMiners, setAllTimeMiners] = useState<MinerEntry[]>([]);
+  const [activeMiners, setActiveMiners] = useState<ActiveMinerEntry[]>([]);
   const [topValidators, setTopValidators] = useState<ValidatorEntry[]>([]);
   const [topRegions, setTopRegions] = useState<RegionEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +48,7 @@ export default function LeaderboardPage() {
           setEpoch(data.epoch || 0);
           setTopMiners(data.topMiners || []);
           setAllTimeMiners(data.allTimeMiners || []);
+          setActiveMiners(data.activeMiners || []);
           setTopValidators(data.topValidators || []);
           setTopRegions(data.topRegions || []);
         }
@@ -56,9 +65,10 @@ export default function LeaderboardPage() {
   const truncateAddr = (addr: string) =>
     `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
-  const tabs: { key: Tab; label: string }[] = [
+  const tabs: { key: Tab; label: string; badge?: number }[] = [
     { key: "miners", label: "This Epoch" },
     { key: "alltime", label: "All Time" },
+    { key: "active", label: "Active Now", badge: activeMiners.length },
     { key: "validators", label: "Validators" },
     { key: "regions", label: "Regions" },
   ];
@@ -80,13 +90,18 @@ export default function LeaderboardPage() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-4 py-3 text-sm font-medium transition-colors ${
+            className={`px-4 py-3 text-sm font-medium transition-colors flex items-center gap-1.5 ${
               tab === t.key
                 ? "text-charity-green border-b-2 border-charity-green"
                 : "text-foreground/50 hover:text-foreground"
             }`}
           >
             {t.label}
+            {t.badge !== undefined && t.badge > 0 && (
+              <span className="inline-flex items-center justify-center rounded-full bg-charity-green/20 text-charity-green text-xs font-semibold px-1.5 min-w-[1.25rem] h-5">
+                {t.badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -166,6 +181,49 @@ export default function LeaderboardPage() {
                         </td>
                         <td className="py-2 text-right text-voyager-gold">
                           {Number(miner.poh_amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
+          {/* Active Now */}
+          {tab === "active" && (
+            <div className="space-y-2">
+              {activeMiners.length === 0 ? (
+                <div className="text-foreground/50 text-center py-12">
+                  No miners online in the last 15 minutes.
+                </div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-foreground/50 border-b border-surface-light">
+                      <th className="text-left py-2 w-12">#</th>
+                      <th className="text-left py-2">Miner</th>
+                      <th className="text-left py-2">Tier</th>
+                      <th className="text-right py-2">Reputation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeMiners.map((m, i) => (
+                      <tr
+                        key={m.device_id}
+                        className="border-b border-surface-light/50 hover:bg-surface/50"
+                      >
+                        <td className="py-2 text-foreground/50">{i + 1}</td>
+                        <td className="py-2 text-foreground font-mono text-xs">
+                          {truncateAddr(m.wallet_address)}
+                        </td>
+                        <td className="py-2">
+                          <span className="inline-block rounded px-1.5 py-0.5 text-xs font-semibold bg-surface-light text-foreground/70">
+                            T{m.tier}
+                          </span>
+                        </td>
+                        <td className="py-2 text-right text-charity-green">
+                          {m.reputation}/100
                         </td>
                       </tr>
                     ))}
