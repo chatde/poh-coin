@@ -102,6 +102,9 @@ function computeProtein(payload: Record<string, unknown>, rng: Xorshift128Plus):
   let totalEnergy = 0;
   const lr = 0.01 / temperature;
 
+  const percentStride = Math.floor(iterations / 10);
+  const textStride = Math.min(50, percentStride);
+
   for (let iter = 0; iter < iterations; iter++) {
     totalEnergy = 0;
 
@@ -131,11 +134,19 @@ function computeProtein(payload: Record<string, unknown>, rng: Xorshift128Plus):
       }
     }
 
-    if (iter % Math.floor(iterations / 10) === 0) {
+    // Send percent + step update at every 10% boundary (skip iter=0 to avoid alarming 0%)
+    if (iter > 0 && iter % percentStride === 0) {
       self.postMessage({
         type: "progress",
         percent: Math.round((iter / iterations) * 100),
         step: `Minimizing energy (${residues.length} residues): ${totalEnergy.toFixed(4)}`,
+      } as ProgressMessage);
+    } else if (iter > 0 && iter % textStride === 0) {
+      // Intermediate text-only heartbeat so miners know work is happening
+      self.postMessage({
+        type: "progress",
+        percent: Math.round((iter / iterations) * 100),
+        step: `Computing protein folding (${residues.length} residues) — iter ${iter}/${iterations}...`,
       } as ProgressMessage);
     }
   }
@@ -190,11 +201,17 @@ function computeClimate(payload: Record<string, unknown>): unknown {
 
     grid.set(newGrid);
 
-    if (t % Math.floor(timeSteps / 10) === 0) {
+    if (t > 0 && t % Math.floor(timeSteps / 10) === 0) {
       self.postMessage({
         type: "progress",
         percent: Math.round((t / timeSteps) * 100),
         step: `Simulating heat diffusion (${gridSize}x${gridSize}): step ${t}/${timeSteps}`,
+      } as ProgressMessage);
+    } else if (t > 0 && t % Math.min(50, Math.floor(timeSteps / 10)) === 0) {
+      self.postMessage({
+        type: "progress",
+        percent: Math.round((t / timeSteps) * 100),
+        step: `Computing climate grid (${gridSize}x${gridSize}) — step ${t}/${timeSteps}...`,
       } as ProgressMessage);
     }
   }
@@ -415,11 +432,17 @@ function computeDrugScreen(payload: Record<string, unknown>): unknown {
       }
     }
 
-    if (rot % Math.floor(orientations / 10) === 0) {
+    if (rot > 0 && rot % Math.floor(orientations / 10) === 0) {
       self.postMessage({
         type: "progress",
         percent: Math.round((rot / orientations) * 100),
         step: `Screening orientation ${rot}/${orientations} — best: ${bestScore.toFixed(2)} kcal/mol`,
+      } as ProgressMessage);
+    } else if (rot > 0 && rot % Math.min(50, Math.floor(orientations / 10)) === 0) {
+      self.postMessage({
+        type: "progress",
+        percent: Math.round((rot / orientations) * 100),
+        step: `Docking molecule — orientation ${rot}/${orientations}...`,
       } as ProgressMessage);
     }
   }

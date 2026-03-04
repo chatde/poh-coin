@@ -161,9 +161,16 @@ export default function MissionControl({
             Current Task
           </div>
           <TerminalLine>
-            {taskDisplayName || "Waiting for assignment..."}
-            {status === "computing" && <BlinkingCursor />}
+            {status === "loading"
+              ? "Requesting work unit..."
+              : taskDisplayName || "Waiting for assignment..."}
+            {(status === "computing" || status === "loading") && <BlinkingCursor />}
           </TerminalLine>
+          {status === "loading" && (
+            <div className="text-green-700 text-xs mt-1 animate-pulse">
+              Contacting server...
+            </div>
+          )}
           {status === "computing" && (
             <div className="mt-2">
               <TerminalProgress percent={progress} />
@@ -220,7 +227,9 @@ export default function MissionControl({
                 {blockState.equationSolved
                   ? "SOLVED"
                   : isMining
-                    ? `${blockState.equationHashRate.toLocaleString()} H/s`
+                    ? blockState.equationHashRate > 0
+                      ? `${blockState.equationHashRate.toLocaleString()} H/s`
+                      : "Initializing..."
                     : "IDLE"}
               </span>
             </div>
