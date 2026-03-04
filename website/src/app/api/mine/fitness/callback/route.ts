@@ -14,7 +14,7 @@ import { verifyOAuthState, getProvider, storeConnection } from "@/lib/fitness-da
  * 5. Redirect to /mine/setup?fitness=success&provider=xxx
  */
 export async function GET(req: NextRequest) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "").trim().replace(/\/$/, "");
   const setupUrl = `${appUrl}/mine/setup`;
 
   try {

@@ -10,12 +10,12 @@
 
 import { supabase } from "@/lib/supabase";
 
-const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID || "";
-const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET || "";
-const FITBIT_CLIENT_ID = process.env.FITBIT_CLIENT_ID || "";
-const FITBIT_CLIENT_SECRET = process.env.FITBIT_CLIENT_SECRET || "";
-const OAUTH_STATE_SECRET = process.env.OAUTH_STATE_SECRET || "poh-oauth-state-secret";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "";
+const STRAVA_CLIENT_ID = (process.env.STRAVA_CLIENT_ID || "").trim();
+const STRAVA_CLIENT_SECRET = (process.env.STRAVA_CLIENT_SECRET || "").trim();
+const FITBIT_CLIENT_ID = (process.env.FITBIT_CLIENT_ID || "").trim();
+const FITBIT_CLIENT_SECRET = (process.env.FITBIT_CLIENT_SECRET || "").trim();
+const OAUTH_STATE_SECRET = (process.env.OAUTH_STATE_SECRET || "poh-oauth-state-secret").trim();
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "").trim().replace(/\/$/, "");
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -215,9 +215,13 @@ export async function verifyOAuthState(
     const [b64Payload, b64Sig] = state.split(".");
     if (!b64Payload || !b64Sig) return null;
 
-    // Restore base64 padding
-    const payload = atob(b64Payload.replace(/-/g, "+").replace(/_/g, "/"));
-    const sig = atob(b64Sig.replace(/-/g, "+").replace(/_/g, "/"));
+    // Restore base64url → standard base64 (replace URL-safe chars, re-add stripped padding)
+    const restorePadding = (s: string) => {
+      const base = s.replace(/-/g, "+").replace(/_/g, "/");
+      return base + "=".repeat((4 - (base.length % 4)) % 4);
+    };
+    const payload = atob(restorePadding(b64Payload));
+    const sig = atob(restorePadding(b64Sig));
 
     // Verify HMAC
     const encoder = new TextEncoder();
@@ -292,8 +296,8 @@ const stravaProvider: FitnessProvider = {
     try {
       const res = await fetch("https://www.strava.com/oauth/token", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
           client_id: STRAVA_CLIENT_ID,
           client_secret: STRAVA_CLIENT_SECRET,
           code,
@@ -318,8 +322,8 @@ const stravaProvider: FitnessProvider = {
     try {
       const res = await fetch("https://www.strava.com/oauth/token", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
           client_id: STRAVA_CLIENT_ID,
           client_secret: STRAVA_CLIENT_SECRET,
           refresh_token: refreshToken,
@@ -562,13 +566,13 @@ export async function storeConnection(
   providerName: string,
   tokens: OAuthTokens,
 ): Promise<boolean> {
-  // Deactivate any existing connection for this wallet + provider
+  // Delete any existing connection for this wallet + provider (same provider_user_id would
+  // violate the UNIQUE constraint on provider_user_id if we only set is_active=false).
   await supabase
     .from("fitness_connections")
-    .update({ is_active: false })
+    .delete()
     .eq("wallet_address", walletAddress.toLowerCase())
-    .eq("provider", providerName)
-    .eq("is_active", true);
+    .eq("provider", providerName);
 
   const { error } = await supabase.from("fitness_connections").insert({
     wallet_address: walletAddress.toLowerCase(),
