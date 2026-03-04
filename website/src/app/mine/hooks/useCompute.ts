@@ -168,9 +168,16 @@ export function useCompute(deviceId: string | null) {
   const startEquationWorker = useCallback(() => {
     if (!deviceId || equationWorkerRef.current) return;
 
-    equationWorkerRef.current = new Worker(
-      new URL("../workers/block-equation.worker.ts", import.meta.url)
-    );
+    try {
+      equationWorkerRef.current = new Worker(
+        new URL("../workers/block-equation.worker.ts", import.meta.url)
+      );
+    } catch (workerErr) {
+      // Equation worker is non-critical — log and continue without it.
+      // The science compute loop still works; blocks just won't be mined.
+      console.warn("[Mining] Failed to create equation worker:", workerErr);
+      return;
+    }
 
     const worker = equationWorkerRef.current;
 
@@ -198,14 +205,15 @@ export function useCompute(deviceId: string | null) {
           equationSolved: true,
           equationHashRate: msg.hashRate,
         }));
-        // Check if block is complete (tasks + equation both done)
-        checkBlockComplete();
+        // Use the ref so we always call the latest checkBlockComplete without
+        // needing it in the useCallback dependency array (it uses refs internally).
+        checkBlockCompleteRef.current();
       }
     });
 
     // Calibrate first, then start
     worker.postMessage({ type: "calibrate", deviceId });
-  }, [deviceId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [deviceId]);
 
   const stopEquationWorker = useCallback(() => {
     if (equationWorkerRef.current) {
@@ -226,26 +234,31 @@ export function useCompute(deviceId: string | null) {
     const tasksNeeded = TASKS_PER_BLOCK_MIN; // Scales to TASKS_PER_BLOCK_MAX once 1000+ miners are active
     if (blockTasksRef.current >= tasksNeeded && equationSolvedRef.current) {
       // Block mined!
-      setBlockState((s) => ({
-        ...s,
-        blocksMined: s.blocksMined + 1,
-        blockTasksCompleted: 0,
-        equationSolved: false,
-      }));
+      setBlockState((s) => {
+        // Restart equation worker for next block using the live difficulty from state
+        if (equationWorkerRef.current && deviceId) {
+          equationWorkerRef.current.postMessage({
+            type: "start",
+            blockHeight: getBlockHeight(),
+            deviceId,
+            difficulty: s.equationDifficulty,
+          });
+        }
+        return {
+          ...s,
+          blocksMined: s.blocksMined + 1,
+          blockTasksCompleted: 0,
+          equationSolved: false,
+        };
+      });
       blockTasksRef.current = 0;
       equationSolvedRef.current = false;
-
-      // Start next block equation
-      if (equationWorkerRef.current && deviceId) {
-        equationWorkerRef.current.postMessage({
-          type: "start",
-          blockHeight: getBlockHeight(),
-          deviceId,
-          difficulty: blockState.equationDifficulty,
-        });
-      }
     }
-  }, [deviceId, blockState.equationDifficulty]);
+  }, [deviceId]);
+
+  // Keep the ref in sync so startEquationWorker's message handler always has
+  // the latest version without needing it listed as a dependency.
+  checkBlockCompleteRef.current = checkBlockComplete;
 
   // Setup Supabase Realtime subscription for task assignments
   useEffect(() => {
@@ -325,11 +338,25 @@ export function useCompute(deviceId: string | null) {
   const runMiningLoop = useCallback(async () => {
     if (!deviceId || !isMiningRef.current) return;
 
-    // Initialize worker
+    // Initialize worker — guard against CSP or memory failures so the loop
+    // doesn't exit silently while isMining stays true.
     if (!workerRef.current) {
-      workerRef.current = new Worker(
-        new URL("../workers/compute.worker.ts", import.meta.url)
-      );
+      try {
+        workerRef.current = new Worker(
+          new URL("../workers/compute.worker.ts", import.meta.url)
+        );
+      } catch (workerErr) {
+        console.error("[Mining] Failed to create compute worker:", workerErr);
+        isMiningRef.current = false;
+        setIsMining(false);
+        setState((s) => ({
+          ...s,
+          status: "error",
+          error: "Web Workers are not available in this browser. Mining cannot start.",
+          progressStep: "Error: Web Worker unavailable.",
+        }));
+        return;
+      }
     }
 
     const worker = workerRef.current;
@@ -422,9 +449,23 @@ export function useCompute(deviceId: string | null) {
       if (!computeResult || !isMiningRef.current) {
         if (!isMiningRef.current) break;
         workerRef.current?.terminate();
-        workerRef.current = new Worker(
-          new URL("../workers/compute.worker.ts", import.meta.url)
-        );
+        workerRef.current = null;
+        try {
+          workerRef.current = new Worker(
+            new URL("../workers/compute.worker.ts", import.meta.url)
+          );
+        } catch (workerErr) {
+          console.error("[Mining] Failed to restart compute worker:", workerErr);
+          isMiningRef.current = false;
+          setIsMining(false);
+          setState((s) => ({
+            ...s,
+            status: "error",
+            error: "Web Workers are not available in this browser.",
+            progressStep: "Error: Web Worker unavailable.",
+          }));
+          return;
+        }
         setState((s) => ({ ...s, status: "idle", progressStep: "Task timed out. Retrying..." }));
         await new Promise((r) => setTimeout(r, 2_000));
         continue;
@@ -453,7 +494,7 @@ export function useCompute(deviceId: string | null) {
         ...s,
         blockTasksCompleted: blockTasksRef.current,
       }));
-      checkBlockComplete();
+      checkBlockCompleteRef.current();
 
       // Brief pause between tasks
       await new Promise((r) => setTimeout(r, 1_000));
