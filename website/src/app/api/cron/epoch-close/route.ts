@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ethers } from "ethers";
 import { supabase } from "@/lib/supabase";
 import { buildMerkleTree, toWei } from "@/lib/merkle";
+import { CONTRACTS, REWARDS_ABI, RPC_URL } from "@/lib/contracts";
 import { syncFahContributions, calculateFahBonus } from "@/lib/fah-data";
 import {
   calculateWeeklyPool,
@@ -484,13 +486,39 @@ export async function POST(req: NextRequest) {
       status: "active",
     });
 
+    // 17. Auto-stage merkle root on-chain (starts 24hr timelock)
+    let onChainStaged = false;
+    let stageTxHash: string | null = null;
+
+    if (rewardArray.length > 0) {
+      const signerKey = process.env.DEPLOYER_PRIVATE_KEY || process.env.BACKEND_SIGNER_KEY;
+      if (signerKey) {
+        try {
+          const provider = new ethers.JsonRpcProvider(RPC_URL);
+          const signer = new ethers.Wallet(signerKey, provider);
+          const rewards = new ethers.Contract(CONTRACTS.rewards, REWARDS_ABI, signer);
+          const rootBytes = root as `0x${string}`;
+          const tx = await rewards.setMerkleRoot(rootBytes);
+          await tx.wait();
+          stageTxHash = tx.hash;
+          onChainStaged = true;
+        } catch (e) {
+          console.error("On-chain root staging failed (will need manual activation):", e);
+        }
+      }
+    }
+
     return NextResponse.json({
       epoch: epoch.epoch_number,
       merkleRoot: root,
       totalRewards: rewardArray.length,
       weeklyPool,
       totalDistributed: rewardArray.reduce((sum, r) => sum + r.pohAmount, 0),
-      message: "Epoch closed. Merkle root ready for 24hr timelock submission.",
+      onChainStaged,
+      stageTxHash,
+      message: onChainStaged
+        ? "Epoch closed. Merkle root staged on-chain. Activate in 24hrs."
+        : "Epoch closed. Merkle root ready — on-chain staging requires manual step.",
     });
   } catch (err) {
     console.error("Epoch close error:", err);
