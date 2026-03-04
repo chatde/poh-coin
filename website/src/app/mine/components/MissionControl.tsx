@@ -29,6 +29,13 @@ interface MissionControlProps {
   onStartMining: () => void;
   onStopMining: () => void;
   blockState?: BlockState;
+  lifetimeStats?: {
+    verifiedTasks: number;
+    totalPoints: number;
+    consensusRate: number;
+  };
+  submissionStatus?: "idle" | "verified" | "awaiting" | "failed";
+  uptimeStart?: number;
 }
 
 function formatEpoch(epoch: number): string {
@@ -60,6 +67,9 @@ export default function MissionControl({
   onStartMining,
   onStopMining,
   blockState,
+  lifetimeStats,
+  submissionStatus,
+  uptimeStart,
 }: MissionControlProps) {
   const [log, setLog] = useState<string[]>([]);
   const [uptime, setUptime] = useState(0);
@@ -68,15 +78,15 @@ export default function MissionControl({
     activeNodes: number;
   } | null>(null);
 
-  // Track uptime
+  // Track uptime — use uptimeStart prop as base if provided, otherwise local mount time
   useEffect(() => {
     if (!isMining) return;
-    const start = Date.now();
+    const start = uptimeStart ?? Date.now();
     const timer = setInterval(() => {
       setUptime(Math.floor((Date.now() - start) / 1000));
     }, 1000);
     return () => clearInterval(timer);
-  }, [isMining]);
+  }, [isMining, uptimeStart]);
 
   // Add to log on progress changes
   useEffect(() => {
@@ -177,6 +187,21 @@ export default function MissionControl({
               <div className="text-green-700 text-xs mt-1">{progressStep}</div>
             </div>
           )}
+          {submissionStatus === "verified" && (
+            <div className="mt-2 inline-flex items-center gap-1 text-xs text-green-400 border border-green-600 rounded px-2 py-0.5">
+              ✓ Verified
+            </div>
+          )}
+          {submissionStatus === "awaiting" && (
+            <div className="mt-2 inline-flex items-center gap-1 text-xs text-yellow-400 border border-yellow-700 rounded px-2 py-0.5">
+              ⏳ Awaiting consensus...
+            </div>
+          )}
+          {submissionStatus === "failed" && (
+            <div className="mt-2 inline-flex items-center gap-1 text-xs text-red-400 border border-red-700 rounded px-2 py-0.5">
+              ✗ Failed
+            </div>
+          )}
         </div>
       )}
 
@@ -261,6 +286,14 @@ export default function MissionControl({
         </div>
         <TerminalStatus label="POINTS THIS EPOCH" value={points} />
         <TerminalStatus label="TASKS COMPLETED" value={tasksCompleted} />
+        {lifetimeStats !== undefined && (
+          <div className="flex justify-between items-center text-xs py-0.5">
+            <span className="text-green-700 uppercase tracking-wider">LIFETIME VERIFIED</span>
+            <span className="text-green-600 font-mono">
+              {(lifetimeStats.verifiedTasks ?? 0).toLocaleString()} verified (lifetime)
+            </span>
+          </div>
+        )}
         <TerminalStatus
           label="COMPUTE TIME"
           value={`${(totalComputeMs / 1000).toFixed(1)}s`}

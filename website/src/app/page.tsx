@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { VoyagerTracker } from "@/components/VoyagerTracker";
 import { VoyagerSceneLazy } from "@/components/voyager3d/VoyagerSceneLazy";
 import { StarField } from "@/components/StarField";
@@ -293,9 +294,28 @@ const missionPillars = [
   },
 ];
 
+/* ========== Types ========== */
+
+interface NetworkStats {
+  activeNodes: number;
+  verifiedTasks: number;
+  totalDistributed: number;
+}
+
 /* ========== PAGE ========== */
 
 export default function Home() {
+  const [networkStats, setNetworkStats] = useState<NetworkStats | null>(null);
+
+  useEffect(() => {
+    fetch("/api/data/stats")
+      .then((res) => res.json())
+      .then((data: NetworkStats) => setNetworkStats(data))
+      .catch(() => {
+        // Silently fail — section shows skeleton until data arrives
+      });
+  }, []);
+
   return (
     <>
       {/* ═══════════════════ SECTION 1 — HERO ═══════════════════ */}
@@ -686,7 +706,92 @@ export default function Home() {
       {/* Gradient divider */}
       <div className="h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
 
-      {/* ═══════════════════ SECTION 6 — VOYAGER TOKENOMICS ═══════════════════ */}
+      {/* ═══════════════════ SECTION 6 — NETWORK ACTIVITY ═══════════════════ */}
+      <ParallaxSection className="py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <FadeIn>
+            <div className="text-center">
+              <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-accent-light backdrop-blur-sm">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-charity-green animate-pulse" />
+                Live Network
+              </span>
+              <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
+                Network Activity
+              </h2>
+              <p className="mx-auto mt-4 max-w-xl text-foreground/60">
+                Real numbers from the POH network, updated live.
+              </p>
+            </div>
+          </FadeIn>
+
+          <StaggerParent className="mt-12 grid gap-5 sm:grid-cols-3">
+            {/* Active Nodes */}
+            <StaggerChild>
+              <TiltCard className="h-full rounded-2xl" glowColor="rgba(129, 140, 248, 0.35)">
+                <div className="glass-card flex h-full flex-col items-center p-8 text-center">
+                  <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-accent/10">
+                    <IconCpu className="h-7 w-7 text-accent-light" />
+                  </div>
+                  <p className="text-3xl font-extrabold tracking-tight text-foreground stat-glow">
+                    {networkStats !== null ? (
+                      <CountUp end={networkStats.activeNodes} duration={2} />
+                    ) : (
+                      <span className="opacity-30">—</span>
+                    )}
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-foreground/50">Active Nodes</p>
+                  <p className="mt-1 text-xs text-foreground/30">mining right now</p>
+                </div>
+              </TiltCard>
+            </StaggerChild>
+
+            {/* Verified Tasks */}
+            <StaggerChild>
+              <TiltCard className="h-full rounded-2xl" glowColor="rgba(245, 158, 11, 0.35)">
+                <div className="glass-card flex h-full flex-col items-center p-8 text-center">
+                  <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-voyager-gold/10">
+                    <IconMicroscope className="h-7 w-7 text-voyager-gold" />
+                  </div>
+                  <p className="text-3xl font-extrabold tracking-tight text-foreground stat-glow">
+                    {networkStats !== null ? (
+                      <CountUp end={networkStats.verifiedTasks} duration={2.5} />
+                    ) : (
+                      <span className="opacity-30">—</span>
+                    )}
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-foreground/50">Verified Tasks</p>
+                  <p className="mt-1 text-xs text-foreground/30">proofs completed</p>
+                </div>
+              </TiltCard>
+            </StaggerChild>
+
+            {/* POH Distributed */}
+            <StaggerChild>
+              <TiltCard className="h-full rounded-2xl" glowColor="rgba(16, 185, 129, 0.35)">
+                <div className="glass-card flex h-full flex-col items-center p-8 text-center">
+                  <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-charity-green/10">
+                    <IconCoins className="h-7 w-7 text-charity-green" />
+                  </div>
+                  <p className="text-3xl font-extrabold tracking-tight text-foreground stat-glow">
+                    {networkStats !== null ? (
+                      <CountUp end={networkStats.totalDistributed} duration={3} decimals={0} />
+                    ) : (
+                      <span className="opacity-30">—</span>
+                    )}
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-foreground/50">POH Distributed</p>
+                  <p className="mt-1 text-xs text-foreground/30">total claimed rewards</p>
+                </div>
+              </TiltCard>
+            </StaggerChild>
+          </StaggerParent>
+        </div>
+      </ParallaxSection>
+
+      {/* Gradient divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-voyager-gold/30 to-transparent" />
+
+      {/* ═══════════════════ SECTION 7 — VOYAGER TOKENOMICS ═══════════════════ */}
       <ParallaxSection className="py-28 sm:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <FadeIn>

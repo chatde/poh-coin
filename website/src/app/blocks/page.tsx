@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { FadeIn } from "@/components/motion/FadeIn"
 import { CountUp } from "@/components/motion/CountUp"
 import { TiltCard } from "@/components/motion/TiltCard"
@@ -8,6 +9,25 @@ import { StaggerParent, StaggerChild } from "@/components/motion/StaggerChildren
 import { getBlockHeight, getBlocksPerDay } from "@/lib/voyager"
 import { getBlockReward, getEmissionSchedule, getDecommissionState, formatPOHAmount, REWARDS_POOL, MAX_DISTRIBUTABLE, PERMANENTLY_LOCKED } from "@/lib/block-rewards"
 import { getVoyagerDistanceKm, formatDistanceKm, formatBlockHeight } from "@/lib/voyager"
+import type { RecentBlock } from "@/app/api/blocks/recent/route"
+import type { TopMiner } from "@/app/api/blocks/top-miners/route"
+
+function shortenWallet(wallet: string): string {
+  if (wallet.length <= 12) return wallet
+  return `${wallet.slice(0, 6)}…${wallet.slice(-4)}`
+}
+
+function formatTimeAgo(isoString: string): string {
+  const diffMs = Date.now() - new Date(isoString).getTime()
+  const diffSec = Math.floor(diffMs / 1000)
+  if (diffSec < 60) return `${diffSec}s ago`
+  const diffMin = Math.floor(diffSec / 60)
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `${diffHr}h ago`
+  const diffDay = Math.floor(diffHr / 24)
+  return `${diffDay}d ago`
+}
 
 export default function BlockExplorerPage() {
   const currentBlock = getBlockHeight()
@@ -19,6 +39,49 @@ export default function BlockExplorerPage() {
   const decommissionYear5 = getDecommissionState(5)
   const decommissionYear10 = getDecommissionState(10)
   const decommissionYear15 = getDecommissionState(15)
+
+  // Live DB state
+  const [recentBlocks, setRecentBlocks] = useState<RecentBlock[]>([])
+  const [topMiners, setTopMiners] = useState<TopMiner[]>([])
+  const [currentEpoch, setCurrentEpoch] = useState<number | null>(null)
+  const [blocksLoading, setBlocksLoading] = useState(true)
+  const [minersLoading, setMinersLoading] = useState(true)
+  const [blocksError, setBlocksError] = useState<string | null>(null)
+  const [minersError, setMinersError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchRecentBlocks() {
+      try {
+        const res = await fetch("/api/blocks/recent")
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const json = (await res.json()) as { blocks?: RecentBlock[]; error?: string }
+        if (json.error) throw new Error(json.error)
+        setRecentBlocks(json.blocks ?? [])
+      } catch (err: unknown) {
+        setBlocksError(err instanceof Error ? err.message : "Failed to load blocks")
+      } finally {
+        setBlocksLoading(false)
+      }
+    }
+
+    async function fetchTopMiners() {
+      try {
+        const res = await fetch("/api/blocks/top-miners")
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const json = (await res.json()) as { miners?: TopMiner[]; epoch?: number; error?: string }
+        if (json.error) throw new Error(json.error)
+        setTopMiners(json.miners ?? [])
+        if (json.epoch !== undefined) setCurrentEpoch(json.epoch)
+      } catch (err: unknown) {
+        setMinersError(err instanceof Error ? err.message : "Failed to load miners")
+      } finally {
+        setMinersLoading(false)
+      }
+    }
+
+    void fetchRecentBlocks()
+    void fetchTopMiners()
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-light">
@@ -90,6 +153,128 @@ export default function BlockExplorerPage() {
             </StaggerChild>
           </div>
         </StaggerParent>
+      </section>
+
+      {/* Recent Blocks */}
+      <section className="container mx-auto px-4 py-16">
+        <FadeIn>
+          <h2 className="text-4xl font-bold text-center mb-4">
+            <span className="gradient-text-animated">Recent Blocks</span>
+          </h2>
+          <p className="text-gray-300 text-center max-w-2xl mx-auto mb-12">
+            The latest blocks mined on the POH network.
+          </p>
+        </FadeIn>
+
+        <FadeIn delay={0.2}>
+          <div className="glass-card overflow-hidden">
+            <div className="overflow-x-auto">
+              {blocksLoading ? (
+                <div className="py-16 text-center text-gray-400">Loading blocks...</div>
+              ) : blocksError ? (
+                <div className="py-16 text-center text-red-400">Error: {blocksError}</div>
+              ) : recentBlocks.length === 0 ? (
+                <div className="py-16 text-center text-gray-400">No blocks mined yet.</div>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-700">
+                      <th className="px-3 sm:px-6 py-4 text-left text-sm font-semibold text-voyager-gold">Height</th>
+                      <th className="px-3 sm:px-6 py-4 text-left text-sm font-semibold text-voyager-gold">Solver</th>
+                      <th className="px-3 sm:px-6 py-4 text-right text-sm font-semibold text-voyager-gold">Reward</th>
+                      <th className="px-3 sm:px-6 py-4 text-right text-sm font-semibold text-voyager-gold">Mined</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentBlocks.map((block, index) => (
+                      <tr
+                        key={block.id}
+                        className={`border-b border-gray-800 hover:bg-surface-light/50 transition-colors ${
+                          index % 2 === 0 ? "bg-surface/30" : ""
+                        }`}
+                      >
+                        <td className="px-3 sm:px-6 py-4 text-left font-mono text-voyager-gold">
+                          #{block.height.toLocaleString()}
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 text-left font-mono text-gray-300 text-sm">
+                          {shortenWallet(block.solver_wallet)}
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 text-right text-charity-green font-semibold">
+                          {block.reward_poh.toFixed(2)} POH
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 text-right text-gray-400 text-sm">
+                          {formatTimeAgo(block.mined_at)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </FadeIn>
+      </section>
+
+      {/* Top Miners */}
+      <section className="container mx-auto px-4 py-16">
+        <FadeIn>
+          <h2 className="text-4xl font-bold text-center mb-4">
+            <span className="gradient-text-animated">Top Miners</span>
+          </h2>
+          <p className="text-gray-300 text-center max-w-2xl mx-auto mb-12">
+            {currentEpoch !== null
+              ? `Leaderboard for Epoch ${currentEpoch} — blocks mined and POH earned.`
+              : "Leaderboard — blocks mined and POH earned."}
+          </p>
+        </FadeIn>
+
+        <FadeIn delay={0.2}>
+          <div className="glass-card overflow-hidden">
+            <div className="overflow-x-auto">
+              {minersLoading ? (
+                <div className="py-16 text-center text-gray-400">Loading miners...</div>
+              ) : minersError ? (
+                <div className="py-16 text-center text-red-400">Error: {minersError}</div>
+              ) : topMiners.length === 0 ? (
+                <div className="py-16 text-center text-gray-400">No miners this epoch yet.</div>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-700">
+                      <th className="px-3 sm:px-6 py-4 text-left text-sm font-semibold text-voyager-gold">Rank</th>
+                      <th className="px-3 sm:px-6 py-4 text-left text-sm font-semibold text-voyager-gold">Wallet</th>
+                      <th className="px-3 sm:px-6 py-4 text-right text-sm font-semibold text-voyager-gold">Blocks</th>
+                      <th className="px-3 sm:px-6 py-4 text-right text-sm font-semibold text-voyager-gold">POH Earned</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topMiners.map((miner, index) => (
+                      <tr
+                        key={miner.wallet_address}
+                        className={`border-b border-gray-800 hover:bg-surface-light/50 transition-colors ${
+                          index % 2 === 0 ? "bg-surface/30" : ""
+                        }`}
+                      >
+                        <td className="px-3 sm:px-6 py-4 text-left font-bold text-voyager-gold">
+                          #{miner.rank}
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 text-left font-mono text-gray-300 text-sm">
+                          {shortenWallet(miner.wallet_address)}
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 text-right text-accent font-semibold">
+                          {miner.blocks_mined.toLocaleString()}
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 text-right text-charity-green font-semibold">
+                          {miner.poh_earned.toFixed(2)} POH
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </FadeIn>
       </section>
 
       {/* RTG Decay Schedule */}

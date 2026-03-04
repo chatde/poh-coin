@@ -43,22 +43,13 @@ export async function GET() {
       .slice(0, 50)
       .map(([wallet_address, total_points]) => ({ wallet_address, total_points }));
 
-    // All-time miners — sum poh_amount from rewards table by wallet
-    const { data: allTimeData } = await supabase
-      .from("rewards")
-      .select("wallet_address, poh_amount")
-      .order("poh_amount", { ascending: false })
-      .limit(50);
+    // All-time miners — use server-side RPC that groups by wallet, sums poh_amount, then limits
+    const { data: allTimeData } = await supabase.rpc("leaderboard_all_time");
 
-    const walletPoh = new Map<string, number>();
-    (allTimeData as RewardRow[] | null)?.forEach((r) => {
-      walletPoh.set(r.wallet_address, (walletPoh.get(r.wallet_address) || 0) + Number(r.poh_amount));
-    });
-
-    const allTimeMiners = Array.from(walletPoh.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 50)
-      .map(([wallet_address, poh_amount]) => ({ wallet_address, poh_amount }));
+    const allTimeMiners = (allTimeData as RewardRow[] | null)?.map((r) => ({
+      wallet_address: r.wallet_address,
+      poh_amount: Number(r.poh_amount),
+    })) ?? [];
 
     // Active miners — nodes with last_heartbeat within the last 15 minutes
     const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();

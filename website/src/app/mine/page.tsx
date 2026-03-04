@@ -23,6 +23,7 @@ export default function MinePage() {
   const [needsSetup, setNeedsSetup] = useState(false);
   const [savingsWallet, setSavingsWallet] = useState<string | null>(null);
   const [miningView, setMiningView] = useState<"compute" | "fitness" | "both">("both");
+  const [lifetimeStats, setLifetimeStats] = useState({ verifiedTasks: 0, totalPoints: 0, consensusRate: 0 });
 
   const compute = useCompute(deviceId);
   const heartbeat = useHeartbeat(deviceId);
@@ -67,6 +68,31 @@ export default function MinePage() {
     const interval = setInterval(fetchPoints, 30_000);
     return () => clearInterval(interval);
   }, [walletAddress]);
+
+  // Fetch lifetime stats periodically
+  useEffect(() => {
+    if (!deviceId || !walletAddress) return;
+
+    const fetchLifetimeStats = async () => {
+      try {
+        const res = await fetch(`/api/mine/stats?deviceId=${deviceId}&wallet=${walletAddress}`);
+        if (res.ok) {
+          const data = await res.json();
+          setLifetimeStats({
+            verifiedTasks: data.verifiedTasks || 0,
+            totalPoints: data.totalPoints || 0,
+            consensusRate: data.consensusRate || 0,
+          });
+        }
+      } catch {
+        // Will retry
+      }
+    };
+
+    fetchLifetimeStats();
+    const interval = setInterval(fetchLifetimeStats, 30_000);
+    return () => clearInterval(interval);
+  }, [deviceId, walletAddress]);
 
   // Register service worker
   useEffect(() => {
@@ -202,6 +228,8 @@ export default function MinePage() {
               onStartMining={handleStartMining}
               onStopMining={handleStopMining}
               blockState={compute.blockState}
+              lifetimeStats={lifetimeStats}
+              submissionStatus={compute.submissionStatus}
             />
           )}
         </div>

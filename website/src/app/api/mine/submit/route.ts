@@ -224,6 +224,58 @@ export async function POST(req: NextRequest) {
       .eq("task_id", taskId)
       .not("submitted_at", "is", null);
 
+    // ── Single-miner path: server acts as second opinion via spot check ──
+    if (allSubs && allSubs.length === 1 && taskInfo) {
+      const spotResult = spotCheckResult(
+        taskInfo.task_type,
+        taskInfo.payload as Record<string, unknown>,
+        result as Record<string, unknown>,
+      );
+
+      if (!spotResult.passed) {
+        await recordFailure(deviceId, taskId, "reference_mismatch");
+
+        return NextResponse.json({
+          verified: false,
+          spotCheck: { passed: false, deviation: spotResult.deviation },
+          message: "Spot check failed",
+        });
+      }
+
+      // Spot check passed — fetch active epoch and award point
+      const { data: epoch } = await supabase
+        .from("epochs")
+        .select("epoch_number")
+        .eq("status", "active")
+        .single();
+
+      if (epoch) {
+        await supabase.from("proofs").insert({
+          device_id: deviceId,
+          epoch: epoch.epoch_number,
+          points_earned: 1,
+          tasks_completed: 1,
+          quality_verified: true,
+        });
+      }
+
+      await supabase
+        .from("task_assignments")
+        .update({ is_match: true })
+        .eq("id", allSubs[0].id);
+
+      await supabase
+        .from("compute_tasks")
+        .update({ status: "completed" })
+        .eq("task_id", taskId);
+
+      return NextResponse.json({
+        verified: true,
+        spotCheck: { passed: true, deviation: spotResult.deviation },
+        message: "Verified by spot check",
+      });
+    }
+
     if (allSubs && allSubs.length >= 2) {
       const resultStrings = allSubs.map((s) => JSON.stringify(s.result));
       const groups = new Map<string, string[]>();

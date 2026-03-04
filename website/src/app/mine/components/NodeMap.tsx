@@ -9,6 +9,11 @@ interface NodeCell {
   total: number;
 }
 
+interface UserNode {
+  is_active: boolean;
+  last_heartbeat: string | null;
+}
+
 interface NodeMapProps {
   deviceId: string | null;
   walletAddress: string | null;
@@ -18,15 +23,20 @@ export default function NodeMap({ deviceId, walletAddress }: NodeMapProps) {
   const [cells, setCells] = useState<NodeCell[]>([]);
   const [totalCells, setTotalCells] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [userNode, setUserNode] = useState<UserNode | null>(null);
 
   useEffect(() => {
     const fetchNodes = async () => {
       try {
-        const res = await fetch("/api/data/nodes");
+        const url = deviceId
+          ? `/api/data/nodes?deviceId=${encodeURIComponent(deviceId)}`
+          : "/api/data/nodes";
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
           setCells(data.cells || []);
-          setTotalCells(data.totalCells || 0);
+          setTotalCells(data.totalCells ?? 0);
+          setUserNode(data.userNode ?? null);
         }
       } catch {
         // Supplementary data — fail silently
@@ -38,10 +48,15 @@ export default function NodeMap({ deviceId, walletAddress }: NodeMapProps) {
     fetchNodes();
     const interval = setInterval(fetchNodes, 60_000);
     return () => clearInterval(interval);
-  }, []);
+  }, [deviceId]);
 
   const totalNodes = cells.reduce((sum, c) => sum + c.total, 0);
   const totalValidators = cells.reduce((sum, c) => sum + c.validators, 0);
+
+  const isNodeActive =
+    userNode?.is_active === true &&
+    userNode.last_heartbeat !== null &&
+    Date.now() - new Date(userNode.last_heartbeat).getTime() < 10 * 60 * 1000;
 
   return (
     <div className="space-y-4">
@@ -54,7 +69,9 @@ export default function NodeMap({ deviceId, walletAddress }: NodeMapProps) {
           <div className="space-y-1">
             <div className="flex justify-between text-xs">
               <span className="text-green-600">STATUS</span>
-              <span className="text-green-400">ACTIVE</span>
+              <span className={isNodeActive ? "text-green-400" : "text-red-500"}>
+                {isNodeActive ? "ACTIVE" : "INACTIVE"}
+              </span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-green-600">TYPE</span>
@@ -87,7 +104,7 @@ export default function NodeMap({ deviceId, walletAddress }: NodeMapProps) {
           <>
             <div className="grid grid-cols-3 gap-2 mb-3">
               <div className="text-center">
-                <div className="text-green-400 text-lg font-bold">{totalNodes || 1}</div>
+                <div className="text-green-400 text-lg font-bold">{totalNodes}</div>
                 <div className="text-green-700 text-xs">NODES</div>
               </div>
               <div className="text-center">
@@ -95,7 +112,7 @@ export default function NodeMap({ deviceId, walletAddress }: NodeMapProps) {
                 <div className="text-green-700 text-xs">VALIDATORS</div>
               </div>
               <div className="text-center">
-                <div className="text-green-400 text-lg font-bold">{totalCells || 1}</div>
+                <div className="text-green-400 text-lg font-bold">{totalCells}</div>
                 <div className="text-green-700 text-xs">REGIONS</div>
               </div>
             </div>

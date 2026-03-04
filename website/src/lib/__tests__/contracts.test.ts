@@ -19,7 +19,7 @@ describe('contracts.ts', () => {
     });
 
     it('should have valid Ethereum addresses', () => {
-      Object.values(CONTRACTS).forEach(address => {
+      (Object.values(CONTRACTS) as string[]).forEach(address => {
         if (address !== 'TBD') {
           expect(address).toMatch(/^0x[0-9a-fA-F]{40}$/);
         }

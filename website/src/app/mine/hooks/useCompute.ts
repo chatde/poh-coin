@@ -24,6 +24,7 @@ interface ComputeState {
   tasksCompleted: number;
   totalComputeMs: number;
   error: string | null;
+  submissionStatus: "idle" | "verified" | "awaiting" | "failed";
 }
 
 /** Block equation worker state */
@@ -113,10 +114,20 @@ export function useCompute(deviceId: string | null) {
     tasksCompleted: persisted.tasksCompleted || 0,
     totalComputeMs: persisted.totalComputeMs || 0,
     error: null,
+    submissionStatus: "idle",
   });
 
+  const savedBlockTasks = (() => {
+    try {
+      const raw = localStorage.getItem("poh_block_tasks");
+      return raw !== null ? parseInt(raw, 10) || 0 : 0;
+    } catch {
+      return 0;
+    }
+  })();
+
   const [blockState, setBlockState] = useState<BlockState>({
-    blockTasksCompleted: 0,
+    blockTasksCompleted: savedBlockTasks,
     tasksPerBlock: TASKS_PER_BLOCK_MIN,
     equationSolved: false,
     equationHashRate: 0,
@@ -131,8 +142,23 @@ export function useCompute(deviceId: string | null) {
   const equationWorkerRef = useRef<Worker | null>(null);
   const isMiningRef = useRef(false);
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
-  const blockTasksRef = useRef(0);
+  const blockTasksRef = useRef(savedBlockTasks);
   const equationSolvedRef = useRef(false);
+  // Fix 4: persist uptime start timestamp — restored from localStorage on mount
+  const uptimeStartRef = useRef<number | null>((() => {
+    try {
+      const raw = localStorage.getItem("poh_uptime_start");
+      // Only restore if mining was active when the page was last loaded
+      const wasMining = localStorage.getItem("poh-was-mining") === "true";
+      if (wasMining && raw !== null) {
+        const parsed = parseInt(raw, 10);
+        return isNaN(parsed) ? null : parsed;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  })());
   // Stable ref to checkBlockComplete so startEquationWorker's message handler
   // always calls the latest version without needing it in its deps array.
   const checkBlockCompleteRef = useRef<() => void>(() => {});
@@ -252,6 +278,9 @@ export function useCompute(deviceId: string | null) {
         };
       });
       blockTasksRef.current = 0;
+      try {
+        localStorage.setItem("poh_block_tasks", "0");
+      } catch {}
       equationSolvedRef.current = false;
     }
   }, [deviceId]);
@@ -315,21 +344,39 @@ export function useCompute(deviceId: string | null) {
   }, [deviceId]);
 
   const submitResult = useCallback(
-    async (taskId: string, result: unknown, computeTimeMs: number, proof: unknown) => {
-      if (!deviceId) return;
+    async (
+      taskId: string,
+      result: unknown,
+      computeTimeMs: number,
+      proof: unknown
+    ): Promise<"verified" | "awaiting" | "failed"> => {
+      if (!deviceId) return "failed";
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10_000);
       try {
         const body = JSON.stringify({ deviceId, taskId, result, computeTimeMs, proof });
-        await fetch("/api/mine/submit", {
+        const res = await fetch("/api/mine/submit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body,
           signal: controller.signal,
         });
         clearTimeout(timeout);
+        const data = await res.json() as { verified: boolean; message: string };
+        if (data.verified === true) {
+          setState((s) => ({ ...s, submissionStatus: "verified" }));
+          return "verified";
+        } else if (res.ok) {
+          setState((s) => ({ ...s, submissionStatus: "awaiting" }));
+          return "awaiting";
+        } else {
+          setState((s) => ({ ...s, submissionStatus: "failed" }));
+          return "failed";
+        }
       } catch {
         clearTimeout(timeout);
+        setState((s) => ({ ...s, submissionStatus: "failed" }));
+        return "failed";
       }
     },
     [deviceId]
@@ -479,22 +526,40 @@ export function useCompute(deviceId: string | null) {
         progressStep: "Submitting results for verification...",
       }));
 
-      await submitResult(task.task_id, computeResult.result, computeResult.computeTimeMs, computeResult.proof);
+      const verificationStatus = await submitResult(
+        task.task_id,
+        computeResult.result,
+        computeResult.computeTimeMs,
+        computeResult.proof
+      );
 
-      setState((s) => ({
-        ...s,
-        tasksCompleted: s.tasksCompleted + 1,
-        totalComputeMs: s.totalComputeMs + computeResult.computeTimeMs,
-        progressStep: "Verified! Requesting next task...",
-      }));
+      if (verificationStatus === "verified") {
+        setState((s) => ({
+          ...s,
+          tasksCompleted: s.tasksCompleted + 1,
+          totalComputeMs: s.totalComputeMs + computeResult.computeTimeMs,
+          progressStep: "Verified! Requesting next task...",
+        }));
 
-      // Track block progress
-      blockTasksRef.current += 1;
-      setBlockState((s) => ({
-        ...s,
-        blockTasksCompleted: blockTasksRef.current,
-      }));
-      checkBlockCompleteRef.current();
+        // Track block progress — only count verified tasks
+        blockTasksRef.current += 1;
+        try {
+          localStorage.setItem("poh_block_tasks", String(blockTasksRef.current));
+        } catch {}
+        setBlockState((s) => ({
+          ...s,
+          blockTasksCompleted: blockTasksRef.current,
+        }));
+        checkBlockCompleteRef.current();
+      } else {
+        setState((s) => ({
+          ...s,
+          progressStep:
+            verificationStatus === "awaiting"
+              ? "Submission received, awaiting verification..."
+              : "Submission failed. Requesting next task...",
+        }));
+      }
 
       // Brief pause between tasks
       await new Promise((r) => setTimeout(r, 1_000));
@@ -509,17 +574,35 @@ export function useCompute(deviceId: string | null) {
     const wasMining = localStorage.getItem("poh-was-mining") === "true";
     if (!wasMining) return;
 
+    // Fix 4: restore uptime start from localStorage (already set in uptimeStartRef at mount)
+    // If no valid timestamp was restored, record now as the start time
+    if (uptimeStartRef.current === null) {
+      const now = Date.now();
+      uptimeStartRef.current = now;
+      try {
+        localStorage.setItem("poh_uptime_start", String(now));
+      } catch {}
+    }
+
     isMiningRef.current = true;
     setIsMining(true);
     setState((s) => ({ ...s, status: "loading", error: null, progressStep: "Resuming mining after refresh..." }));
     runMiningLoop();
-  }, [deviceId, runMiningLoop]);
+    // Fix 2: auto-resume was missing the equation worker call
+    startEquationWorker();
+  }, [deviceId, runMiningLoop, startEquationWorker]);
 
   const startMining = useCallback(() => {
     if (isMiningRef.current) return;
     isMiningRef.current = true;
     setIsMining(true);
     localStorage.setItem("poh-was-mining", "true");
+    // Fix 4: record (or reset) uptime start timestamp on explicit start
+    const now = Date.now();
+    uptimeStartRef.current = now;
+    try {
+      localStorage.setItem("poh_uptime_start", String(now));
+    } catch {}
     setState((s) => ({ ...s, status: "loading", error: null }));
     runMiningLoop();
     startEquationWorker();
@@ -548,11 +631,15 @@ export function useCompute(deviceId: string | null) {
 
   return {
     ...state,
+    // Fix 5: explicitly surface submissionStatus (also included via ...state spread)
+    submissionStatus: state.submissionStatus,
     blockState,
     taskDisplayName: state.currentTask
       ? getTaskDisplayName(state.currentTask.task_type, state.currentTask.payload)
       : null,
     isMining,
+    // Fix 4: expose uptime start timestamp so consumers can compute session duration
+    uptimeStart: uptimeStartRef.current,
     startMining,
     stopMining,
   };
