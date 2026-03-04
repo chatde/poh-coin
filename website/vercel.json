@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/quality-scores",
       "schedule": "0 3 * * 0"
+    },
+    {
+      "path": "/api/cron/epoch-close",
+      "schedule": "0 4 * * 0"
     }
   ]
 }
