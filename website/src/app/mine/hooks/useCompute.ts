@@ -185,6 +185,9 @@ export function useCompute(deviceId: string | null) {
         });
       } else if (msg.type === "progress") {
         setBlockState((s) => ({ ...s, equationHashRate: msg.hashRate }));
+      } else if (msg.type === "wasm_error") {
+        // WASM init failed — worker continues with Web Crypto fallback, nothing to do here
+        console.warn("[EquationWorker]", msg.message);
       } else if (msg.type === "solved") {
         equationSolvedRef.current = true;
         setBlockState((s) => ({

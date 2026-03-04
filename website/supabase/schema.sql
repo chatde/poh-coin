@@ -334,8 +334,8 @@ $$ LANGUAGE sql STABLE;
 
 -- Get an available task for a device (priority-ordered, not already assigned, fewer than 3 assignments)
 CREATE OR REPLACE FUNCTION get_available_task(p_device_id TEXT)
-RETURNS TABLE (task_id UUID, task_type TEXT, payload JSONB, difficulty SMALLINT) AS $$
-  SELECT ct.task_id, ct.task_type, ct.payload, ct.difficulty
+RETURNS TABLE (task_id UUID, task_type TEXT, payload JSONB, difficulty SMALLINT, seed TEXT, task_version TEXT, source TEXT, priority SMALLINT) AS $$
+  SELECT ct.task_id, ct.task_type, ct.payload, ct.difficulty, ct.seed, ct.task_version, ct.source, ct.priority
   FROM compute_tasks ct
   WHERE ct.status IN ('pending', 'assigned')
     AND ct.task_id NOT IN (
@@ -346,7 +346,7 @@ RETURNS TABLE (task_id UUID, task_type TEXT, payload JSONB, difficulty SMALLINT)
     ) < 3
   ORDER BY ct.priority ASC, ct.created_at ASC
   LIMIT 1;
-$$ LANGUAGE sql STABLE;
+$$ LANGUAGE sql VOLATILE;
 
 -- ── Row Level Security ───────────────────────────────────────
 -- Enable RLS on all tables (Supabase best practice)

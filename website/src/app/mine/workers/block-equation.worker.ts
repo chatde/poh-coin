@@ -47,14 +47,37 @@ type InMessage = StartMessage | StopMessage | CalibrateMessage;
 
 let running = false;
 let hasher: IHasher | null = null;
+/** True when WASM failed to load — falls back to Web Crypto for hashing */
+let wasmUnavailable = false;
 
 // ── Initialize WASM hasher ─────────────────────────────────────────────
 
-async function ensureHasher(): Promise<IHasher> {
+async function ensureHasher(): Promise<IHasher | null> {
+  if (wasmUnavailable) return null;
   if (!hasher) {
-    hasher = await createSHA256();
+    try {
+      hasher = await createSHA256();
+    } catch (err) {
+      wasmUnavailable = true;
+      self.postMessage({
+        type: "wasm_error",
+        message: `hash-wasm failed to initialize, falling back to Web Crypto: ${String(err)}`,
+      });
+      return null;
+    }
   }
   return hasher;
+}
+
+// ── SHA-256 via Web Crypto (async fallback when WASM is unavailable) ───
+
+const encoder = new TextEncoder();
+
+async function sha256HexWebCrypto(input: string): Promise<string> {
+  const data = encoder.encode(input);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 // ── SHA-256 (synchronous after WASM init) ──────────────────────────────
@@ -90,24 +113,35 @@ async function mine(blockHeight: number, deviceId: string, difficulty: number) {
   const startTime = performance.now();
   let lastProgressTime = startTime;
 
+  // Post an initial progress at t=0 so the UI shows a non-zero state immediately
+  self.postMessage({ type: "progress", hashRate: 0, noncesChecked: 0, elapsed: 0 });
+
   while (running) {
-    // Check batch of hashes
-    for (let i = 0; i < YIELD_INTERVAL && running; i++) {
+    if (h !== null) {
+      // WASM path — synchronous, high throughput
+      for (let i = 0; i < YIELD_INTERVAL && running; i++) {
+        const input = prefix + nonce;
+        const hash = sha256Hex(h, input);
+
+        if (meetsTarget(hash, difficulty)) {
+          const elapsed = performance.now() - startTime;
+          const hashRate = Math.floor(nonce / (elapsed / 1_000));
+          self.postMessage({ type: "solved", nonce, hash, hashRate, elapsed: Math.floor(elapsed) });
+          running = false;
+          return;
+        }
+
+        nonce++;
+      }
+    } else {
+      // Web Crypto fallback — async per hash, much slower but functional
       const input = prefix + nonce;
-      const hash = sha256Hex(h, input);
+      const hash = await sha256HexWebCrypto(input);
 
       if (meetsTarget(hash, difficulty)) {
         const elapsed = performance.now() - startTime;
         const hashRate = Math.floor(nonce / (elapsed / 1_000));
-
-        self.postMessage({
-          type: "solved",
-          nonce,
-          hash,
-          hashRate,
-          elapsed: Math.floor(elapsed),
-        });
-
+        self.postMessage({ type: "solved", nonce, hash, hashRate, elapsed: Math.floor(elapsed) });
         running = false;
         return;
       }
@@ -143,14 +177,24 @@ async function mine(blockHeight: number, deviceId: string, difficulty: number) {
 async function calibrate(deviceId: string) {
   const h = await ensureHasher();
   const prefix = `calibrate:${deviceId}:`;
-  const testHashes = 100_000;
+  const testHashes = h !== null ? 100_000 : 50; // Web Crypto is ~1000x slower — use tiny sample
+  let hashesPerSecond: number;
 
   const start = performance.now();
-  for (let i = 0; i < testHashes; i++) {
-    sha256Hex(h, prefix + i);
+  if (h !== null) {
+    for (let i = 0; i < testHashes; i++) {
+      sha256Hex(h, prefix + i);
+    }
+    const elapsed = performance.now() - start;
+    hashesPerSecond = Math.floor(testHashes / (elapsed / 1_000));
+  } else {
+    // Web Crypto fallback calibration — measure a small batch asynchronously
+    for (let i = 0; i < testHashes; i++) {
+      await sha256HexWebCrypto(prefix + i);
+    }
+    const elapsed = performance.now() - start;
+    hashesPerSecond = Math.floor(testHashes / (elapsed / 1_000));
   }
-  const elapsed = performance.now() - start;
-  const hashesPerSecond = Math.floor(testHashes / (elapsed / 1_000));
 
   // Target 5-10 minute solve time
   // Expected attempts for N leading hex zeros: 16^N

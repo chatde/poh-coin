@@ -170,11 +170,60 @@ export async function GET(req: NextRequest) {
     const pendingTask = Array.isArray(pendingTasks) ? pendingTasks[0] : pendingTasks;
 
     if (pendingTask && pendingTask.task_id) {
-      await supabase.from("task_assignments").insert({
-        task_id: pendingTask.task_id,
-        device_id: deviceId,
-      });
-      return NextResponse.json({ task: pendingTask });
+      // Re-fetch full task row to ensure all fields are present regardless of RPC version
+      const { data: fullTask } = await supabase
+        .from("compute_tasks")
+        .select("task_id, task_type, payload, difficulty, seed, task_version, source, priority")
+        .eq("task_id", pendingTask.task_id)
+        .single();
+
+      if (fullTask) {
+        await supabase.from("task_assignments").insert({
+          task_id: fullTask.task_id,
+          device_id: deviceId,
+        });
+        return NextResponse.json({ task: fullTask });
+      }
+    }
+
+    // RPC found nothing — directly scan for under-assigned tasks the RPC may have missed
+    // (guards against stale Supabase function cache and tasks with status='assigned')
+    const { data: underAssigned } = await supabase
+      .from("compute_tasks")
+      .select("task_id, task_type, payload, difficulty, seed, task_version, source, priority")
+      .in("status", ["pending", "assigned"])
+      .limit(20);
+
+    if (underAssigned && underAssigned.length > 0) {
+      // Get assignment counts for candidates in one query
+      const candidateIds = underAssigned.map((t) => t.task_id as string);
+
+      // Find which of these are already assigned to this device
+      const { data: myAssignments } = await supabase
+        .from("task_assignments")
+        .select("task_id")
+        .in("task_id", candidateIds)
+        .eq("device_id", deviceId);
+
+      const myAssignedIds = new Set((myAssignments || []).map((a) => a.task_id as string));
+
+      for (const candidate of underAssigned) {
+        const taskId = candidate.task_id as string;
+        if (myAssignedIds.has(taskId)) continue;
+
+        const { count } = await supabase
+          .from("task_assignments")
+          .select("*", { count: "exact", head: true })
+          .eq("task_id", taskId);
+
+        if ((count ?? 0) < 3) {
+          await supabase.from("task_assignments").insert({
+            task_id: taskId,
+            device_id: deviceId,
+          });
+          return NextResponse.json({ task: candidate });
+        }
+      }
     }
 
     // No existing tasks — generate new one
