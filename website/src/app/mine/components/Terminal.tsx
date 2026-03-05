@@ -34,9 +34,11 @@ export function Terminal({ children, className = "" }: TerminalProps) {
 export function TerminalHeader() {
   return (
     <div className="mb-6">
-      <pre className="text-green-500 text-xs leading-tight overflow-x-auto scrollbar-none">
-        {ASCII_LOGO}
-      </pre>
+      <div className="flex justify-center">
+        <pre className="text-green-500 text-xs leading-tight">
+          {ASCII_LOGO}
+        </pre>
+      </div>
       <div className="text-green-500 text-xs text-center tracking-widest uppercase">
         PROOF OF PLANET &nbsp;·&nbsp; v1.0
       </div>
