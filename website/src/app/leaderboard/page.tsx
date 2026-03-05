@@ -42,7 +42,9 @@ export default function LeaderboardPage() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const res = await fetch("/api/leaderboard");
+        const res = await fetch("/api/leaderboard", {
+          signal: AbortSignal.timeout(15000),
+        });
         if (res.ok) {
           const data = await res.json();
           setEpoch(data.epoch || 0);

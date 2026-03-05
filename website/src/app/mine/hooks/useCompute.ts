@@ -409,8 +409,8 @@ export function useCompute(deviceId: string | null) {
     const worker = workerRef.current;
 
     while (isMiningRef.current) {
-      // 1. Fetch task
-      setState((s) => ({ ...s, status: "loading", progress: 0, progressStep: "Requesting work unit..." }));
+      // 1. Fetch task — reset submissionStatus so previous task's badge clears
+      setState((s) => ({ ...s, status: "loading", submissionStatus: "idle", progress: 0, progressStep: "Requesting work unit..." }));
 
       const task = await fetchTask();
       if (!task) {

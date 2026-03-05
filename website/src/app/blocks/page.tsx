@@ -30,10 +30,11 @@ function formatTimeAgo(isoString: string): string {
 }
 
 export default function BlockExplorerPage() {
-  const currentBlock = getBlockHeight()
+  // Time-dependent values must be computed client-side to avoid hydration mismatch
+  const [currentBlock, setCurrentBlock] = useState(0)
+  const [currentReward, setCurrentReward] = useState(0)
+  const [distanceKm, setDistanceKm] = useState(0)
   const blocksPerDay = getBlocksPerDay()
-  const currentReward = getBlockReward()
-  const distanceKm = getVoyagerDistanceKm()
   const emissionSchedule = getEmissionSchedule()
 
   const decommissionYear5 = getDecommissionState(5)
@@ -50,9 +51,17 @@ export default function BlockExplorerPage() {
   const [minersError, setMinersError] = useState<string | null>(null)
 
   useEffect(() => {
+    setCurrentBlock(getBlockHeight())
+    setCurrentReward(getBlockReward())
+    setDistanceKm(getVoyagerDistanceKm())
+  }, [])
+
+  useEffect(() => {
     async function fetchRecentBlocks() {
       try {
-        const res = await fetch("/api/blocks/recent")
+        const res = await fetch("/api/blocks/recent", {
+          signal: AbortSignal.timeout(15000),
+        })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const json = (await res.json()) as { blocks?: RecentBlock[]; error?: string }
         if (json.error) throw new Error(json.error)
@@ -66,7 +75,9 @@ export default function BlockExplorerPage() {
 
     async function fetchTopMiners() {
       try {
-        const res = await fetch("/api/blocks/top-miners")
+        const res = await fetch("/api/blocks/top-miners", {
+          signal: AbortSignal.timeout(15000),
+        })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const json = (await res.json()) as { miners?: TopMiner[]; epoch?: number; error?: string }
         if (json.error) throw new Error(json.error)

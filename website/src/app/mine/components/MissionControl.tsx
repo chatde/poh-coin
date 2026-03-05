@@ -250,7 +250,9 @@ export default function MissionControl({
               <span className="text-green-600">EQUATION</span>
               <span className={blockState.equationSolved ? "text-green-400" : "text-yellow-400"}>
                 {blockState.equationSolved
-                  ? "SOLVED"
+                  ? isMining && blockState.blockTasksCompleted < blockState.tasksPerBlock
+                    ? `SOLVED ✓ — ${blockState.blockTasksCompleted}/${blockState.tasksPerBlock} tasks`
+                    : "SOLVED ✓"
                   : isMining
                     ? blockState.equationHashRate > 0
                       ? `${blockState.equationHashRate.toLocaleString()} H/s`
@@ -262,7 +264,9 @@ export default function MissionControl({
               <div
                 className={`h-2 rounded-full transition-all ${
                   blockState.equationSolved
-                    ? "bg-green-400 w-full"
+                    ? isMining && blockState.blockTasksCompleted < blockState.tasksPerBlock
+                      ? "bg-green-400/60 w-full animate-pulse"
+                      : "bg-green-400 w-full"
                     : isMining
                       ? "bg-yellow-500/70 w-1/2 animate-pulse"
                       : "w-0"
