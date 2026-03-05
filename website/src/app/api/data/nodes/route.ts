@@ -51,9 +51,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Count ALL active nodes regardless of location data
+    const { count: totalActiveNodes } = await supabase
+      .from("nodes")
+      .select("*", { count: "exact", head: true })
+      .eq("is_active", true);
+
     return NextResponse.json({
       cells: nodeMap,
       totalCells: nodeMap.length,
+      totalActiveNodes: totalActiveNodes ?? 0,
       userNode,
     });
   } catch {

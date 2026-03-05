@@ -22,6 +22,7 @@ interface NodeMapProps {
 export default function NodeMap({ deviceId, walletAddress }: NodeMapProps) {
   const [cells, setCells] = useState<NodeCell[]>([]);
   const [totalCells, setTotalCells] = useState(0);
+  const [totalActiveNodes, setTotalActiveNodes] = useState(0);
   const [loading, setLoading] = useState(true);
   const [userNode, setUserNode] = useState<UserNode | null>(null);
 
@@ -36,6 +37,7 @@ export default function NodeMap({ deviceId, walletAddress }: NodeMapProps) {
           const data = await res.json();
           setCells(data.cells || []);
           setTotalCells(data.totalCells ?? 0);
+          setTotalActiveNodes(data.totalActiveNodes ?? 0);
           setUserNode(data.userNode ?? null);
         }
       } catch {
@@ -50,7 +52,7 @@ export default function NodeMap({ deviceId, walletAddress }: NodeMapProps) {
     return () => clearInterval(interval);
   }, [deviceId]);
 
-  const totalNodes = cells.reduce((sum, c) => sum + c.total, 0);
+  const totalNodes = totalActiveNodes > 0 ? totalActiveNodes : cells.reduce((sum, c) => sum + c.total, 0);
   const totalValidators = cells.reduce((sum, c) => sum + c.validators, 0);
 
   const isNodeActive =

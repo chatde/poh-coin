@@ -295,7 +295,7 @@ export default function MissionControl({
             value={lifetimeStats.totalPoints.toLocaleString()}
             color="green"
           />
-          {lifetimeStats.consensusRate > 0 && (
+          {Math.round(lifetimeStats.consensusRate * 100) > 0 && (
             <TerminalStatus
               label="CONSENSUS RATE"
               value={`${Math.round(lifetimeStats.consensusRate * 100)}%`}
