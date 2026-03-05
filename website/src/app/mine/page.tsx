@@ -186,22 +186,23 @@ export default function MinePage() {
       )}
 
       {/* View toggle */}
-      <div className="flex gap-2 mb-4">
-        {(["both", "compute", "fitness"] as const).map((view) => (
-          <button
-            key={view}
-            onClick={() => setMiningView(view)}
-            className={`text-xs font-mono px-4 py-2 rounded border transition-colors ${
-              miningView === view
-                ? "border-green-500 text-green-400 bg-green-900/20"
-                : "border-green-900 text-green-700 hover:text-green-400"
-            }`}
-          >
-            {view.toUpperCase()}
-          </button>
-        ))}
-        <div className="flex-1" />
-        <div className="text-green-700 text-xs self-center">
+      <div className="mb-4">
+        <div className="flex gap-2">
+          {(["both", "compute", "fitness"] as const).map((view) => (
+            <button
+              key={view}
+              onClick={() => setMiningView(view)}
+              className={`text-xs font-mono px-4 py-2 rounded border transition-colors ${
+                miningView === view
+                  ? "border-green-500 text-green-400 bg-green-900/20"
+                  : "border-green-900 text-green-700 hover:text-green-400"
+              }`}
+            >
+              {view.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <div className="text-green-700 text-xs mt-1">
           Compute: {computeRate} | Fitness: {fitnessRate}
         </div>
       </div>
