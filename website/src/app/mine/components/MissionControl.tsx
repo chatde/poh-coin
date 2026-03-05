@@ -279,21 +279,39 @@ export default function MissionControl({
         </div>
       )}
 
+      {/* Lifetime Stats — always visible */}
+      {lifetimeStats !== undefined && (
+        <div className="border border-green-700 rounded p-3">
+          <div className="text-green-500 text-xs uppercase tracking-widest mb-2">
+            Your Stats (All Time)
+          </div>
+          <TerminalStatus
+            label="VERIFIED TASKS"
+            value={lifetimeStats.verifiedTasks.toLocaleString()}
+            color="green"
+          />
+          <TerminalStatus
+            label="TOTAL POINTS"
+            value={lifetimeStats.totalPoints.toLocaleString()}
+            color="green"
+          />
+          {lifetimeStats.consensusRate > 0 && (
+            <TerminalStatus
+              label="CONSENSUS RATE"
+              value={`${Math.round(lifetimeStats.consensusRate * 100)}%`}
+              color={lifetimeStats.consensusRate >= 0.8 ? "green" : "yellow"}
+            />
+          )}
+        </div>
+      )}
+
       {/* Telemetry */}
       <div className="border border-green-800 rounded p-3">
         <div className="text-green-500 text-xs uppercase tracking-widest mb-2">
           Telemetry
         </div>
         <TerminalStatus label="POINTS THIS EPOCH" value={points} />
-        <TerminalStatus label="TASKS COMPLETED" value={tasksCompleted} />
-        {lifetimeStats !== undefined && (
-          <div className="flex justify-between items-center text-xs py-0.5">
-            <span className="text-green-700 uppercase tracking-wider">LIFETIME VERIFIED</span>
-            <span className="text-green-600 font-mono">
-              {(lifetimeStats.verifiedTasks ?? 0).toLocaleString()} verified (lifetime)
-            </span>
-          </div>
-        )}
+        <TerminalStatus label="TASKS THIS SESSION" value={tasksCompleted} />
         <TerminalStatus
           label="COMPUTE TIME"
           value={`${(totalComputeMs / 1000).toFixed(1)}s`}
@@ -364,7 +382,7 @@ export default function MissionControl({
           <div className="flex justify-between items-center">
             <span className="text-green-600 text-xs">ACTIVE NODES</span>
             <span className="text-green-400 text-xs font-bold">
-              {stats?.activeNodes || 1}
+              {stats?.activeNodes ?? 0}
             </span>
           </div>
 

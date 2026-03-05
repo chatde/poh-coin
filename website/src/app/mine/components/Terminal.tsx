@@ -14,7 +14,7 @@ const ASCII_LOGO = `
  ██╔═══╝  ██║   ██║ ██╔══██║
  ██║      ╚██████╔╝ ██║  ██║
  ╚═╝       ╚═════╝  ╚═╝  ╚═╝
-  PROOF  OF  PLANET   v1.0
+ PROOF  OF  HUMANITY   v1.0
 `;
 
 export function Terminal({ children, className = "" }: TerminalProps) {
@@ -35,7 +35,7 @@ export function Terminal({ children, className = "" }: TerminalProps) {
 export function TerminalHeader() {
   return (
     <div className="mb-6">
-      <pre className="text-green-500 text-xs leading-tight sm:text-sm">
+      <pre className="text-green-500 text-xs leading-tight overflow-x-auto scrollbar-none">
         {ASCII_LOGO}
       </pre>
       <div className="border-b border-green-800 mt-2 mb-4" />
