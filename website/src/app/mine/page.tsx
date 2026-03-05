@@ -230,6 +230,7 @@ export default function MinePage() {
               blockState={compute.blockState}
               lifetimeStats={lifetimeStats}
               submissionStatus={compute.submissionStatus}
+              uptimeStart={compute.uptimeStart ?? undefined}
             />
           )}
         </div>
