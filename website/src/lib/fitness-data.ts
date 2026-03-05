@@ -576,7 +576,7 @@ export async function storeConnection(
 
   const { error } = await supabase.from("fitness_connections").insert({
     wallet_address: walletAddress.toLowerCase(),
-    device_id: deviceId,
+    device_id: deviceId || null,
     provider_user_id: `${providerName}:${tokens.providerUserId}`,
     provider: providerName,
     access_token: tokens.accessToken,
@@ -586,7 +586,11 @@ export async function storeConnection(
     is_active: true,
   });
 
-  return !error;
+  if (error) {
+    console.error("[fitness] storeConnection failed:", error.code, error.message, error.details);
+    return false;
+  }
+  return true;
 }
 
 // ── Disconnect ───────────────────────────────────────────────────────
