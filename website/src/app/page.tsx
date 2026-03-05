@@ -343,7 +343,7 @@ export default function Home() {
               </span>
 
               {/* Animated gradient headline */}
-              <h1 className="max-w-5xl text-5xl font-extrabold leading-[1.05] tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl">
+              <h1 className="w-full max-w-5xl text-5xl font-extrabold leading-[1.05] tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl">
                 Change the Trajectory{" "}
                 <br className="hidden sm:block" />
                 <span className="gradient-text-animated">
@@ -351,7 +351,7 @@ export default function Home() {
                 </span>
               </h1>
 
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-foreground/60 sm:text-xl">
+              <p className="mt-6 w-full max-w-2xl text-lg leading-relaxed text-foreground/60 sm:text-xl">
                 The first cryptocurrency built for the health of both the planet
                 and its people. Mine with your phone, earn through fitness, save
                 animals, fund science&nbsp;&mdash; all powered by Voyager&nbsp;1&rsquo;s
