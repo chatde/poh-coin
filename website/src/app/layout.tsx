@@ -82,6 +82,19 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${syne.variable} antialiased bg-background text-foreground`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "Project POH",
+              "url": "https://projectpoh.com",
+              "description": "A charity cryptocurrency funding environmental, humanitarian, educational, and health causes.",
+              "sameAs": []
+            })
+          }}
+        />
         <Navbar />
         <main className="relative z-10 min-h-screen">{children}</main>
         <Footer />
