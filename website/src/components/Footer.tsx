@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { NewsletterSignup } from "./NewsletterSignup";
 
 const footerLinks = [
   { href: "/whitepaper", label: "Whitepaper" },
   { href: "/impact", label: "Impact Dashboard" },
   { href: "/governance", label: "Governance" },
+  { href: "/charity", label: "Apply for Funding" },
   { href: "/research", label: "Research" },
   { href: "/how-to-buy", label: "How to Buy" },
   { href: "/about", label: "About" },
@@ -86,6 +88,21 @@ export function Footer() {
       </div>
 
       <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        {/* Newsletter section */}
+        <div className="mb-10 rounded-2xl border border-surface-light bg-surface/30 px-6 py-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-base font-semibold text-foreground">Stay updated on the mission</h3>
+              <p className="mt-1 text-sm text-foreground/50">
+                Get news on governance proposals, charity distributions, and POH milestones.
+              </p>
+            </div>
+            <div className="relative sm:min-w-[320px]">
+              <NewsletterSignup source="footer" />
+            </div>
+          </div>
+        </div>
+
         {/* Top section */}
         <div className="flex flex-col items-center gap-8 md:flex-row md:justify-between">
           {/* Brand & tagline */}

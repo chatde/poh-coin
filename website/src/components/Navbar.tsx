@@ -12,6 +12,7 @@ const navLinks = [
   { href: "/impact", label: "Impact" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/governance", label: "Governance" },
+  { href: "/charity", label: "Charity" },
   { href: "/research", label: "Research" },
   { href: "/how-to-buy", label: "How to Buy" },
 ];

@@ -198,6 +198,52 @@ export default function GovernancePage() {
           </div>
         </Section>
 
+        {/* ── Community Discussion ── */}
+        <Section id="discuss" title="Community Discussion">
+          <p>
+            Governance starts with conversation. Before a formal proposal goes on-chain, the
+            community discusses ideas, identifies issues, and builds consensus. Join the
+            conversation on Discord in the{" "}
+            <strong className="text-accent-light">#governance</strong> channel.
+          </p>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <a
+              href="https://discord.com/invite/4P3bjZRsz"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass-card group flex items-center gap-4 p-6 transition-all hover:border-accent/30"
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-2xl">
+                💬
+              </div>
+              <div>
+                <p className="font-semibold text-foreground group-hover:text-accent-light transition-colors">
+                  Discord — #governance
+                </p>
+                <p className="mt-1 text-sm text-foreground/50">
+                  Discuss proposals before they go on-chain. All holders welcome.
+                </p>
+              </div>
+            </a>
+            <a
+              href="/charity"
+              className="glass-card group flex items-center gap-4 p-6 transition-all hover:border-accent/30"
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-2xl">
+                🌍
+              </div>
+              <div>
+                <p className="font-semibold text-foreground group-hover:text-accent-light transition-colors">
+                  Apply for Charity Funding
+                </p>
+                <p className="mt-1 text-sm text-foreground/50">
+                  Submit a funding application for the community to vote on.
+                </p>
+              </div>
+            </a>
+          </div>
+        </Section>
+
         {/* ── Progressive Decentralization ── */}
         <Section id="decentralization" title="Progressive Decentralization">
           <p>
