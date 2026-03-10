@@ -5,6 +5,8 @@ typechain-types/
 coverage/
 coverage.json
 .env
+.env.local
+.env.*.local
 *.log
 .DS_Store
 .vercel
@@ -14,3 +16,8 @@ BUDGET.md
 DEPLOYMENT_CHECKLIST.md
 scripts/test-send.js
 scripts/transfer-to-ledger.js
+credentials.json
+*.pem
+*.p8
+*.p12
+.apple-creds/
