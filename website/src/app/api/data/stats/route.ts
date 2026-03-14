@@ -4,18 +4,27 @@ import { calculateWeeklyPool } from "@/lib/constants";
 
 export async function GET() {
   try {
-    // Active nodes
+    const heartbeatCutoff = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+
+    // Active nodes (with heartbeat freshness check)
     const { count: activeNodes } = await supabase
       .from("nodes")
       .select("*", { count: "exact", head: true })
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .gte("last_heartbeat", heartbeatCutoff);
 
-    // Active validators
+    // Total registered nodes (regardless of heartbeat)
+    const { count: registeredNodes } = await supabase
+      .from("nodes")
+      .select("*", { count: "exact", head: true });
+
+    // Active validators (with heartbeat freshness check)
     const { count: activeValidators } = await supabase
       .from("nodes")
       .select("*", { count: "exact", head: true })
       .eq("tier", 2)
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .gte("last_heartbeat", heartbeatCutoff);
 
     // Verified tasks
     const { count: verifiedTasks } = await supabase
@@ -33,11 +42,12 @@ export async function GET() {
       (sum, r) => sum + Number(r.poh_amount), 0
     ) || 0;
 
-    // Unique miners
+    // Unique miners (with heartbeat freshness check)
     const { data: uniqueMinersData } = await supabase
       .from("nodes")
       .select("wallet_address")
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .gte("last_heartbeat", heartbeatCutoff);
 
     const uniqueMiners = new Set(uniqueMinersData?.map((n) => n.wallet_address)).size;
 
@@ -50,6 +60,7 @@ export async function GET() {
 
     return NextResponse.json({
       activeNodes: activeNodes || 0,
+      registeredNodes: registeredNodes || 0,
       activeValidators: activeValidators || 0,
       verifiedTasks: verifiedTasks || 0,
       totalDistributed,

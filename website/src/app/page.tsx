@@ -300,6 +300,7 @@ interface NetworkStats {
   activeNodes: number;
   verifiedTasks: number;
   totalDistributed: number;
+  registeredNodes: number;
 }
 
 /* ========== PAGE ========== */
@@ -724,67 +725,97 @@ export default function Home() {
             </div>
           </FadeIn>
 
-          <StaggerParent className="mt-12 grid gap-5 sm:grid-cols-3">
-            {/* Active Nodes */}
-            <StaggerChild>
-              <TiltCard className="h-full rounded-2xl" glowColor="rgba(129, 140, 248, 0.35)">
-                <div className="glass-card flex h-full flex-col items-center p-8 text-center">
-                  <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-accent/10">
-                    <IconCpu className="h-7 w-7 text-accent-light" />
-                  </div>
-                  <p className="text-3xl font-extrabold tracking-tight text-foreground stat-glow">
-                    {networkStats !== null ? (
-                      <CountUp end={networkStats.activeNodes} duration={2} />
-                    ) : (
-                      <span className="opacity-30">—</span>
-                    )}
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-foreground/50">Active Nodes</p>
-                  <p className="mt-1 text-xs text-foreground/30">mining right now</p>
+          {networkStats !== null && networkStats.activeNodes === 0 && networkStats.verifiedTasks === 0 ? (
+            /* Pre-launch state — no active miners yet */
+            <FadeIn>
+              <div className="glass-card mx-auto mt-12 max-w-2xl p-12 text-center">
+                <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-accent/10">
+                  <IconCpu className="h-10 w-10 text-accent-light animate-pulse" />
                 </div>
-              </TiltCard>
-            </StaggerChild>
+                <h3 className="text-2xl font-bold text-foreground mb-3">Network Launching Soon</h3>
+                <p className="text-foreground/60 mb-2">
+                  The POH mining network is live and ready for miners.
+                  {networkStats.registeredNodes > 0 && (
+                    <span className="block mt-1 text-accent-light font-semibold">
+                      {networkStats.registeredNodes} node{networkStats.registeredNodes !== 1 ? "s" : ""} registered — waiting for first mining session.
+                    </span>
+                  )}
+                </p>
+                <p className="text-foreground/40 text-sm mb-6">
+                  Block rewards are accruing with Voyager 1&#39;s journey. Be among the first to mine.
+                </p>
+                <a
+                  href="/mine"
+                  className="inline-flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-accent to-accent-light px-8 text-sm font-semibold text-white shadow-lg shadow-accent/25 transition-all hover:shadow-accent/40 hover:scale-105"
+                >
+                  Start Mining Now
+                </a>
+              </div>
+            </FadeIn>
+          ) : (
+            /* Active network state — show live stats */
+            <StaggerParent className="mt-12 grid gap-5 sm:grid-cols-3">
+              {/* Active Nodes */}
+              <StaggerChild>
+                <TiltCard className="h-full rounded-2xl" glowColor="rgba(129, 140, 248, 0.35)">
+                  <div className="glass-card flex h-full flex-col items-center p-8 text-center">
+                    <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-accent/10">
+                      <IconCpu className="h-7 w-7 text-accent-light" />
+                    </div>
+                    <p className="text-3xl font-extrabold tracking-tight text-foreground stat-glow">
+                      {networkStats !== null ? (
+                        <CountUp end={networkStats.activeNodes} duration={2} />
+                      ) : (
+                        <span className="opacity-30">—</span>
+                      )}
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-foreground/50">Active Nodes</p>
+                    <p className="mt-1 text-xs text-foreground/30">mining right now</p>
+                  </div>
+                </TiltCard>
+              </StaggerChild>
 
-            {/* Verified Tasks */}
-            <StaggerChild>
-              <TiltCard className="h-full rounded-2xl" glowColor="rgba(245, 158, 11, 0.35)">
-                <div className="glass-card flex h-full flex-col items-center p-8 text-center">
-                  <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-voyager-gold/10">
-                    <IconMicroscope className="h-7 w-7 text-voyager-gold" />
+              {/* Verified Tasks */}
+              <StaggerChild>
+                <TiltCard className="h-full rounded-2xl" glowColor="rgba(245, 158, 11, 0.35)">
+                  <div className="glass-card flex h-full flex-col items-center p-8 text-center">
+                    <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-voyager-gold/10">
+                      <IconMicroscope className="h-7 w-7 text-voyager-gold" />
+                    </div>
+                    <p className="text-3xl font-extrabold tracking-tight text-foreground stat-glow">
+                      {networkStats !== null ? (
+                        <CountUp end={networkStats.verifiedTasks} duration={2.5} />
+                      ) : (
+                        <span className="opacity-30">—</span>
+                      )}
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-foreground/50">Verified Tasks</p>
+                    <p className="mt-1 text-xs text-foreground/30">proofs completed</p>
                   </div>
-                  <p className="text-3xl font-extrabold tracking-tight text-foreground stat-glow">
-                    {networkStats !== null ? (
-                      <CountUp end={networkStats.verifiedTasks} duration={2.5} />
-                    ) : (
-                      <span className="opacity-30">—</span>
-                    )}
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-foreground/50">Verified Tasks</p>
-                  <p className="mt-1 text-xs text-foreground/30">proofs completed</p>
-                </div>
-              </TiltCard>
-            </StaggerChild>
+                </TiltCard>
+              </StaggerChild>
 
-            {/* POH Distributed */}
-            <StaggerChild>
-              <TiltCard className="h-full rounded-2xl" glowColor="rgba(16, 185, 129, 0.35)">
-                <div className="glass-card flex h-full flex-col items-center p-8 text-center">
-                  <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-charity-green/10">
-                    <IconCoins className="h-7 w-7 text-charity-green" />
+              {/* POH Distributed */}
+              <StaggerChild>
+                <TiltCard className="h-full rounded-2xl" glowColor="rgba(16, 185, 129, 0.35)">
+                  <div className="glass-card flex h-full flex-col items-center p-8 text-center">
+                    <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-charity-green/10">
+                      <IconCoins className="h-7 w-7 text-charity-green" />
+                    </div>
+                    <p className="text-3xl font-extrabold tracking-tight text-foreground stat-glow">
+                      {networkStats !== null ? (
+                        <CountUp end={networkStats.totalDistributed} duration={3} decimals={0} />
+                      ) : (
+                        <span className="opacity-30">—</span>
+                      )}
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-foreground/50">POH Distributed</p>
+                    <p className="mt-1 text-xs text-foreground/30">total claimed rewards</p>
                   </div>
-                  <p className="text-3xl font-extrabold tracking-tight text-foreground stat-glow">
-                    {networkStats !== null ? (
-                      <CountUp end={networkStats.totalDistributed} duration={3} decimals={0} />
-                    ) : (
-                      <span className="opacity-30">—</span>
-                    )}
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-foreground/50">POH Distributed</p>
-                  <p className="mt-1 text-xs text-foreground/30">total claimed rewards</p>
-                </div>
-              </TiltCard>
-            </StaggerChild>
-          </StaggerParent>
+                </TiltCard>
+              </StaggerChild>
+            </StaggerParent>
+          )}
         </div>
       </ParallaxSection>
 

@@ -76,6 +76,7 @@ export default function MissionControl({
   const [stats, setStats] = useState<{
     verifiedTasks: number;
     activeNodes: number;
+    registeredNodes: number;
   } | null>(null);
 
   // Track uptime — use uptimeStart prop as base if provided, otherwise local mount time
@@ -105,6 +106,7 @@ export default function MissionControl({
           setStats({
             verifiedTasks: data.verifiedTasks || 0,
             activeNodes: data.activeNodes || 0,
+            registeredNodes: data.registeredNodes || 0,
           });
         }
       } catch {}
@@ -136,6 +138,9 @@ export default function MissionControl({
     submitting: "blue" as const,
     error: "red" as const,
   };
+
+  // Determine if this is a fresh network with no activity yet
+  const isPreLaunchNetwork = stats !== null && stats.activeNodes === 0 && stats.verifiedTasks === 0;
 
   return (
     <div className="space-y-4">
@@ -202,6 +207,26 @@ export default function MissionControl({
               ✗ Failed
             </div>
           )}
+        </div>
+      )}
+
+      {/* Early Miner Opportunity — shown when network is pre-launch and user is not yet mining */}
+      {!isMining && isPreLaunchNetwork && (
+        <div className="border border-green-600 rounded p-3 bg-green-900/10">
+          <div className="text-green-400 text-xs uppercase tracking-widest mb-2">
+            Early Miner Opportunity
+          </div>
+          <div className="text-green-500 text-xs leading-relaxed">
+            You are among the first to arrive. The network is live and waiting for miners.
+            {stats.registeredNodes > 0 && (
+              <span className="block mt-1 text-green-400 font-semibold">
+                {stats.registeredNodes} node{stats.registeredNodes !== 1 ? "s" : ""} registered so far.
+              </span>
+            )}
+            <span className="block mt-1">
+              Fewer miners = more POH per point. Start mining now to maximize your early rewards.
+            </span>
+          </div>
         </div>
       )}
 
@@ -352,7 +377,9 @@ export default function MissionControl({
             <span className="text-green-400 font-bold">
               {points > 0 && stats?.activeNodes
                 ? "Proportional to your points"
-                : "Start mining to earn"}
+                : isPreLaunchNetwork
+                  ? "Be the first miner — maximum share"
+                  : "Start mining to earn"}
             </span>
           </div>
           <div className="mt-2 border-t border-green-900 pt-2">
@@ -387,6 +414,9 @@ export default function MissionControl({
             <span className="text-green-600 text-xs">ACTIVE NODES</span>
             <span className="text-green-400 text-xs font-bold">
               {stats?.activeNodes ?? 0}
+              {stats !== null && stats.activeNodes === 0 && stats.registeredNodes > 0 && (
+                <span className="text-green-700 font-normal"> ({stats.registeredNodes} registered)</span>
+              )}
             </span>
           </div>
 

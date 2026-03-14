@@ -10,12 +10,14 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const deviceId = searchParams.get("deviceId");
+    const heartbeatCutoff = new Date(Date.now() - 20 * 60 * 1000).toISOString();
 
     // Return active nodes aggregated by H3 cell (not exact GPS for privacy)
     const { data: nodes } = await supabase
       .from("nodes")
       .select("h3_cell, tier")
       .eq("is_active", true)
+      .gte("last_heartbeat", heartbeatCutoff)
       .not("h3_cell", "is", null);
 
     // Aggregate by H3 cell
@@ -51,11 +53,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Count ALL active nodes regardless of location data
+    // Count ALL active nodes regardless of location data (with heartbeat freshness)
     const { count: totalActiveNodes } = await supabase
       .from("nodes")
       .select("*", { count: "exact", head: true })
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .gte("last_heartbeat", heartbeatCutoff);
 
     return NextResponse.json({
       cells: nodeMap,
