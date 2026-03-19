@@ -7,14 +7,16 @@ interface TerminalProps {
   className?: string;
 }
 
-const ASCII_LOGO = `
- ██████╗   ██████╗  ██╗  ██╗
- ██╔══██╗ ██╔═══██╗ ██║  ██║
- ██████╔╝ ██║   ██║ ███████║
- ██╔═══╝  ██║   ██║ ██╔══██║
- ██║      ╚██████╔╝ ██║  ██║
- ╚═╝       ╚═════╝  ╚═╝  ╚═╝
-`;
+// Each row is a string of 0s and 1s. 1 = filled block, 0 = empty.
+// P(8) + gap(1) + O(8) + gap(1) + H(8) = 26 columns
+const LOGO_GRID = [
+  "11111100011111100110000011",
+  "11000110111001110110000011",
+  "11111100111001110111111111",
+  "11000000111001110110000011",
+  "11000000111001110110000011",
+  "11000000011111100110000011",
+];
 
 export function Terminal({ children, className = "" }: TerminalProps) {
   return (
@@ -35,12 +37,30 @@ export function TerminalHeader() {
   return (
     <div className="mb-6">
       <div className="flex justify-center">
-        <pre className="text-green-500 text-xs leading-tight">
-          {ASCII_LOGO}
-        </pre>
+        <div
+          className="inline-grid gap-0"
+          style={{
+            gridTemplateColumns: `repeat(${LOGO_GRID[0].length}, 8px)`,
+            gridTemplateRows: `repeat(${LOGO_GRID.length}, 8px)`,
+          }}
+        >
+          {LOGO_GRID.map((row, y) =>
+            row.split("").map((cell, x) => (
+              <div
+                key={`${y}-${x}`}
+                className={cell === "1" ? "bg-green-500" : ""}
+                style={{
+                  width: 8,
+                  height: 8,
+                  boxShadow: cell === "1" ? "0 0 4px rgba(0,255,65,0.4)" : "none",
+                }}
+              />
+            ))
+          )}
+        </div>
       </div>
       <div className="text-green-500 text-xs text-center tracking-widest uppercase">
-        PROOF OF PLANET &nbsp;·&nbsp; v1.0
+        PROOF OF PLANET &nbsp;·&nbsp; v{process.env.NEXT_PUBLIC_APP_VERSION || "0.1.0"}
       </div>
       <div className="border-b border-green-800 mt-3 mb-4" />
     </div>
@@ -68,10 +88,12 @@ export function TerminalStatus({
   label,
   value,
   color = "green",
+  hint,
 }: {
   label: string;
   value: string | number;
   color?: "green" | "yellow" | "red" | "blue";
+  hint?: string;
 }) {
   const colorMap = {
     green: "text-green-400",
@@ -81,9 +103,14 @@ export function TerminalStatus({
   };
 
   return (
-    <div className="flex justify-between border-b border-green-900 py-1">
-      <span className="text-green-600">{label}</span>
-      <span className={colorMap[color]}>{value}</span>
+    <div className="border-b border-green-900 py-1">
+      <div className="flex justify-between">
+        <span className="text-green-600">{label}</span>
+        <span className={colorMap[color]}>{value}</span>
+      </div>
+      {hint && (
+        <div className="text-green-800 text-[10px] mt-0.5">{hint}</div>
+      )}
     </div>
   );
 }

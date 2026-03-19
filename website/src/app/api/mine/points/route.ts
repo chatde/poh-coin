@@ -18,7 +18,13 @@ export async function GET(req: NextRequest) {
       .single();
 
     if (!epoch) {
-      return NextResponse.json({ points: 0, epoch: null });
+      console.error("[points] no active epoch found for wallet:", wallet);
+      return NextResponse.json({
+        status: "no_active_epoch",
+        points: 0,
+        epoch: null,
+        message: "No active mining epoch. Next epoch starts after the current one is created.",
+      });
     }
 
     // Get all devices for this wallet
@@ -28,7 +34,13 @@ export async function GET(req: NextRequest) {
       .eq("wallet_address", wallet);
 
     if (!nodes || nodes.length === 0) {
-      return NextResponse.json({ points: 0, epoch: epoch.epoch_number });
+      console.error("[points] no nodes found for wallet:", wallet);
+      return NextResponse.json({
+        status: "no_nodes",
+        points: 0,
+        epoch: epoch.epoch_number,
+        message: "No registered devices found for this wallet.",
+      });
     }
 
     const deviceIds = nodes.map((n) => n.device_id);
@@ -52,6 +64,7 @@ export async function GET(req: NextRequest) {
       .single();
 
     return NextResponse.json({
+      status: "ok",
       points: totalPoints,
       tasksCompleted: totalTasks,
       verifiedTasks,
@@ -60,7 +73,8 @@ export async function GET(req: NextRequest) {
       longestStreak: streak?.longest_streak || 0,
       devices: nodes.length,
     });
-  } catch {
+  } catch (err) {
+    console.error("[points] unhandled error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

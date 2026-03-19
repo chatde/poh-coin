@@ -1,0 +1,258 @@
+{
+    "updatedAt": "2026-02-28T21:19:08.758Z",
+    "createdAt": "2026-02-28T21:19:08.758Z",
+    "id": "Nqr7CPEPDra15zPs",
+    "name": "POH: Network Health Dashboard",
+    "description": null,
+    "active": false,
+    "isArchived": false,
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "hours",
+                            "hoursInterval": 4
+                        }
+                    ]
+                }
+            },
+            "id": "w4-trigger",
+            "name": "Every 4 Hours",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                0,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "https://projectpoh.com/api/data/stats",
+                "options": {
+                    "timeout": 15000
+                }
+            },
+            "id": "w4-get-stats",
+            "name": "Get Network Stats",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                250,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "\nconst stats = $input.first().json;\nconst staticData = $getWorkflowStaticData('global');\n\nconst activeNodes = stats.activeNodes || stats.active_nodes || 0;\nconst activeValidators = stats.activeValidators || stats.active_validators || 0;\nconst weeklyPool = stats.weeklyPool || stats.weekly_pool || 0;\nconst totalNodes = stats.totalNodes || stats.total_nodes || 0;\n\nconst prevNodes = staticData.activeNodes || activeNodes;\nconst prevValidators = staticData.activeValidators || activeValidators;\n\n// Calculate drops\nconst nodeDrop = prevNodes > 0 ? ((prevNodes - activeNodes) / prevNodes) * 100 : 0;\nconst validatorDrop = prevValidators > 0 ? ((prevValidators - activeValidators) / prevValidators) * 100 : 0;\n\nconst alert = nodeDrop > 20 || validatorDrop > 20;\n\n// Check if it's ~8AM for daily summary\nconst hour = new Date().getHours();\nconst isDailySummary = (hour >= 7 && hour <= 9);\n\nstaticData.activeNodes = activeNodes;\nstaticData.activeValidators = activeValidators;\nstaticData.lastCheck = new Date().toISOString();\n\nreturn [{ json: {\n  activeNodes,\n  activeValidators,\n  weeklyPool,\n  totalNodes,\n  prevNodes,\n  prevValidators,\n  nodeDrop: nodeDrop.toFixed(1),\n  validatorDrop: validatorDrop.toFixed(1),\n  alert,\n  isDailySummary,\n  shouldPost: alert || isDailySummary,\n  timestamp: new Date().toISOString()\n}}];\n"
+            },
+            "id": "w4-analyze",
+            "name": "Analyze Stats",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                500,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.alert }}",
+                                        "rightValue": true,
+                                        "operator": {
+                                            "type": "boolean",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "Alert"
+                        },
+                        {
+                            "conditions": {
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.isDailySummary }}",
+                                        "rightValue": true,
+                                        "operator": {
+                                            "type": "boolean",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "Summary"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "none"
+                }
+            },
+            "id": "w4-switch",
+            "name": "Alert or Summary?",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.2,
+            "position": [
+                750,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "REPLACE_WITH_MINING_WEBHOOK_URL",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"embeds\": [{\n    \"title\": \"\ud83d\udea8 POH Network Alert \u2014 Node Drop Detected\",\n    \"color\": 16711680,\n    \"description\": \"Significant drop in network health detected!\",\n    \"fields\": [\n      { \"name\": \"Active Nodes\", \"value\": \"{{ $json.activeNodes }} (was {{ $json.prevNodes }}, -{{ $json.nodeDrop }}%)\", \"inline\": true },\n      { \"name\": \"Active Validators\", \"value\": \"{{ $json.activeValidators }} (was {{ $json.prevValidators }}, -{{ $json.validatorDrop }}%)\", \"inline\": true },\n      { \"name\": \"Weekly Pool\", \"value\": \"{{ $json.weeklyPool }} POH\", \"inline\": true }\n    ],\n    \"footer\": { \"text\": \"POH Network Health\" },\n    \"timestamp\": \"{{ $json.timestamp }}\"\n  }]\n}",
+                "options": {
+                    "timeout": 10000
+                }
+            },
+            "id": "w4-alert",
+            "name": "Alert Discord",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1050,
+                -100
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "REPLACE_WITH_MINING_WEBHOOK_URL",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"embeds\": [{\n    \"title\": \"\ud83d\udcca POH Daily Network Summary\",\n    \"color\": 3447003,\n    \"fields\": [\n      { \"name\": \"Active Nodes\", \"value\": \"{{ $json.activeNodes }}\", \"inline\": true },\n      { \"name\": \"Active Validators\", \"value\": \"{{ $json.activeValidators }}\", \"inline\": true },\n      { \"name\": \"Total Nodes\", \"value\": \"{{ $json.totalNodes }}\", \"inline\": true },\n      { \"name\": \"Weekly Pool\", \"value\": \"{{ $json.weeklyPool }} POH\", \"inline\": true }\n    ],\n    \"footer\": { \"text\": \"POH Network Health \u2014 Daily Summary\" },\n    \"timestamp\": \"{{ $json.timestamp }}\"\n  }]\n}",
+                "options": {
+                    "timeout": 10000
+                }
+            },
+            "id": "w4-summary",
+            "name": "Daily Summary",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1050,
+                100
+            ]
+        }
+    ],
+    "connections": {
+        "Every 4 Hours": {
+            "main": [
+                [
+                    {
+                        "node": "Get Network Stats",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Network Stats": {
+            "main": [
+                [
+                    {
+                        "node": "Analyze Stats",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Analyze Stats": {
+            "main": [
+                [
+                    {
+                        "node": "Alert or Summary?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Alert or Summary?": {
+            "main": [
+                [
+                    {
+                        "node": "Alert Discord",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Daily Summary",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": null,
+    "versionId": "336c36d8-8bba-412c-8d99-4b952a3e04f5",
+    "activeVersionId": null,
+    "versionCounter": 1,
+    "triggerCount": 0,
+    "shared": [
+        {
+            "updatedAt": "2026-02-28T21:19:08.762Z",
+            "createdAt": "2026-02-28T21:19:08.762Z",
+            "role": "workflow:owner",
+            "workflowId": "Nqr7CPEPDra15zPs",
+            "projectId": "O4fXgOeIW0SoS9ka",
+            "project": {
+                "updatedAt": "2026-02-28T21:00:36.731Z",
+                "createdAt": "2026-02-28T20:58:03.925Z",
+                "id": "O4fXgOeIW0SoS9ka",
+                "name": "chatura de silva <helpdeskpoh@gmail.com>",
+                "type": "personal",
+                "icon": null,
+                "description": null,
+                "creatorId": "c9b659d8-4f65-4dd6-b32d-a711ff49bbdb"
+            }
+        }
+    ],
+    "tags": [],
+    "activeVersion": null
+}

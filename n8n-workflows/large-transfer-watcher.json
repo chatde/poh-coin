@@ -1,0 +1,250 @@
+{
+    "updatedAt": "2026-02-28T21:19:08.815Z",
+    "createdAt": "2026-02-28T21:19:08.815Z",
+    "id": "9joWs7Z0hubuqmB8",
+    "name": "POH: Large Transfer Watcher",
+    "description": null,
+    "active": false,
+    "isArchived": false,
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "minutes",
+                            "minutesInterval": 10
+                        }
+                    ]
+                }
+            },
+            "id": "w5-trigger",
+            "name": "Every 10 Minutes",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                0,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "\nconst staticData = $getWorkflowStaticData('global');\nconst fromBlock = staticData.lastBlock || 0;\nreturn [{ json: { fromBlock } }];\n"
+            },
+            "id": "w5-get-block",
+            "name": "Get Last Block",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                250,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "https://api.basescan.org/api?module=logs&action=getLogs&address=0x280Ddb8b67Ad8cf791D370FE59227d19e989Fb07&topic0=0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef&fromBlock={{ $json.fromBlock }}&toBlock=latest&apikey=REPLACE_WITH_BASESCAN_API_KEY",
+                "options": {
+                    "timeout": 15000
+                }
+            },
+            "id": "w5-get-logs",
+            "name": "Get Transfer Logs",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                500,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "\nconst response = $input.first().json;\nconst staticData = $getWorkflowStaticData('global');\n\nif (response.status !== '1' || !response.result || !Array.isArray(response.result) || response.result.length === 0) {\n  return [{ json: { hasLargeTransfers: false, transfers: [] } }];\n}\n\nconst logs = response.result;\nconst maxBlock = Math.max(...logs.map(l => parseInt(l.blockNumber, 16)));\nstaticData.lastBlock = maxBlock + 1;\n\nconst THRESHOLD = 10000; // 10,000 POH (18 decimals)\nconst THRESHOLD_WEI = BigInt(THRESHOLD) * BigInt(10 ** 18);\n\nconst largeTransfers = [];\nfor (const log of logs) {\n  // Transfer(address from, address to, uint256 value)\n  // topics[1] = from (padded), topics[2] = to (padded), data = value\n  if (log.topics.length < 3) continue;\n\n  const from = '0x' + log.topics[1].slice(26);\n  const to = '0x' + log.topics[2].slice(26);\n  const valueHex = log.data;\n\n  let valueBigInt;\n  try {\n    valueBigInt = BigInt(valueHex);\n  } catch {\n    continue;\n  }\n\n  if (valueBigInt >= THRESHOLD_WEI) {\n    const valueEth = Number(valueBigInt / BigInt(10 ** 14)) / 10000; // 4 decimal places\n    largeTransfers.push({\n      from: from.slice(0, 8) + '...' + from.slice(-4),\n      fromFull: from,\n      to: to.slice(0, 8) + '...' + to.slice(-4),\n      toFull: to,\n      amount: valueEth.toLocaleString(),\n      blockNumber: parseInt(log.blockNumber, 16),\n      txHash: log.transactionHash,\n    });\n  }\n}\n\nreturn [{ json: {\n  hasLargeTransfers: largeTransfers.length > 0,\n  transfers: largeTransfers,\n  totalTransfers: logs.length,\n  largeCount: largeTransfers.length\n}}];\n"
+            },
+            "id": "w5-parse",
+            "name": "Filter Large Transfers",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                750,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "has-large",
+                            "leftValue": "={{ $json.hasLargeTransfers }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "or"
+                }
+            },
+            "id": "w5-if",
+            "name": "Any Large Transfers?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                1000,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "\nconst data = $input.first().json;\nconst transfers = data.transfers;\n\nconst fields = transfers.slice(0, 10).map(t => ({\n  name: `${t.amount} POH`,\n  value: `From: ${t.from}\\nTo: ${t.to}\\n[View tx](https://basescan.org/tx/${t.txHash})`,\n  inline: false\n}));\n\nreturn [{ json: {\n  embeds: [{\n    title: '\ud83d\udc0b POH Large Transfer Detected',\n    color: 16776960,\n    description: `${data.largeCount} transfer(s) over 10,000 POH detected (out of ${data.totalTransfers} total).`,\n    fields,\n    footer: { text: 'POH Transfer Watcher' },\n    timestamp: new Date().toISOString()\n  }]\n}}];\n"
+            },
+            "id": "w5-format",
+            "name": "Format Discord Message",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1250,
+                -50
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "REPLACE_WITH_GOVERNANCE_WEBHOOK_URL",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify($json) }}",
+                "options": {
+                    "timeout": 10000
+                }
+            },
+            "id": "w5-discord",
+            "name": "Post to Discord",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1500,
+                -50
+            ]
+        }
+    ],
+    "connections": {
+        "Every 10 Minutes": {
+            "main": [
+                [
+                    {
+                        "node": "Get Last Block",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Last Block": {
+            "main": [
+                [
+                    {
+                        "node": "Get Transfer Logs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Transfer Logs": {
+            "main": [
+                [
+                    {
+                        "node": "Filter Large Transfers",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Large Transfers": {
+            "main": [
+                [
+                    {
+                        "node": "Any Large Transfers?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Any Large Transfers?": {
+            "main": [
+                [
+                    {
+                        "node": "Format Discord Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "Format Discord Message": {
+            "main": [
+                [
+                    {
+                        "node": "Post to Discord",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": null,
+    "versionId": "7ef5576f-b533-4c36-8f86-348d733580c6",
+    "activeVersionId": null,
+    "versionCounter": 1,
+    "triggerCount": 0,
+    "shared": [
+        {
+            "updatedAt": "2026-02-28T21:19:08.817Z",
+            "createdAt": "2026-02-28T21:19:08.817Z",
+            "role": "workflow:owner",
+            "workflowId": "9joWs7Z0hubuqmB8",
+            "projectId": "O4fXgOeIW0SoS9ka",
+            "project": {
+                "updatedAt": "2026-02-28T21:00:36.731Z",
+                "createdAt": "2026-02-28T20:58:03.925Z",
+                "id": "O4fXgOeIW0SoS9ka",
+                "name": "chatura de silva <helpdeskpoh@gmail.com>",
+                "type": "personal",
+                "icon": null,
+                "description": null,
+                "creatorId": "c9b659d8-4f65-4dd6-b32d-a711ff49bbdb"
+            }
+        }
+    ],
+    "tags": [],
+    "activeVersion": null
+}

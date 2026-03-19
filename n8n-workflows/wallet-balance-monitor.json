@@ -1,0 +1,337 @@
+{
+    "updatedAt": "2026-02-28T21:19:07.871Z",
+    "createdAt": "2026-02-28T21:19:07.871Z",
+    "id": "aZQhDpXA1HOMwv7s",
+    "name": "POH: Wallet Balance Monitor",
+    "description": null,
+    "active": false,
+    "isArchived": false,
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "hours",
+                            "hoursInterval": 4
+                        }
+                    ]
+                }
+            },
+            "id": "w1-trigger",
+            "name": "Every 4 Hours",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                0,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://mainnet.base.org",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_getBalance\",\"params\":[\"0x2d0BbA61E34015F2e511d96A40980e90882ba768\",\"latest\"]}",
+                "options": {
+                    "timeout": 10000
+                }
+            },
+            "id": "w1-deployer-balance",
+            "name": "Get Deployer Balance",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                250,
+                -100
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://mainnet.base.org",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"eth_getBalance\",\"params\":[\"0xdB3A72973141BCFCA1A11ABAf7A03E62495FbaD0\",\"latest\"]}",
+                "options": {
+                    "timeout": 10000
+                }
+            },
+            "id": "w1-ledger-balance",
+            "name": "Get Ledger Balance",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                250,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "\n// Merge both balance results\nconst deployerData = $('Get Deployer Balance').first().json;\nconst ledgerData = $('Get Ledger Balance').first().json;\n\nconst hexToEth = (hex) => {\n  if (!hex || hex === '0x0') return 0;\n  return parseInt(hex, 16) / 1e18;\n};\n\nconst deployerBalance = hexToEth(deployerData.result);\nconst ledgerBalance = hexToEth(ledgerData.result);\n\n// Static data for change tracking\nconst staticData = $getWorkflowStaticData('global');\nconst prevDeployer = staticData.deployerBalance || 0;\nconst prevLedger = staticData.ledgerBalance || 0;\n\nconst deployerChanged = Math.abs(deployerBalance - prevDeployer) > 0.0001;\nconst ledgerChanged = Math.abs(ledgerBalance - prevLedger) > 0.0001;\n\nstaticData.deployerBalance = deployerBalance;\nstaticData.ledgerBalance = ledgerBalance;\nstaticData.lastCheck = new Date().toISOString();\n\nconst lowGas = deployerBalance < 0.005;\n\nreturn [{\n  json: {\n    deployerBalance: deployerBalance.toFixed(6),\n    ledgerBalance: ledgerBalance.toFixed(6),\n    prevDeployer: prevDeployer.toFixed(6),\n    prevLedger: prevLedger.toFixed(6),\n    deployerChanged,\n    ledgerChanged,\n    anyChange: deployerChanged || ledgerChanged,\n    lowGas,\n    timestamp: new Date().toISOString()\n  }\n}];\n"
+            },
+            "id": "w1-parse",
+            "name": "Parse Balances",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                500,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "change-check",
+                            "leftValue": "={{ $json.anyChange }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "or"
+                }
+            },
+            "id": "w1-if",
+            "name": "Balance Changed?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                750,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "REPLACE_WITH_JARVIS_WEBHOOK_URL",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"embeds\": [{\n    \"title\": \"\ud83d\udcb0 POH Wallet Balance Update\",\n    \"color\": {{ $json.lowGas ? 16711680 : 3447003 }},\n    \"fields\": [\n      { \"name\": \"Deployer\", \"value\": \"{{ $json.deployerBalance }} ETH{{ $json.deployerChanged ? ' \u2b06\ufe0f was ' + $json.prevDeployer : '' }}\", \"inline\": true },\n      { \"name\": \"Ledger\", \"value\": \"{{ $json.ledgerBalance }} ETH{{ $json.ledgerChanged ? ' \u2b06\ufe0f was ' + $json.prevLedger : '' }}\", \"inline\": true }\n    ],\n    \"footer\": { \"text\": \"POH Wallet Monitor\" },\n    \"timestamp\": \"{{ $json.timestamp }}\"\n  }]\n}",
+                "options": {
+                    "timeout": 10000
+                }
+            },
+            "id": "w1-discord",
+            "name": "Discord Alert",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1000,
+                -50
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "low-gas-check",
+                            "leftValue": "={{ $json.lowGas }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "or"
+                }
+            },
+            "id": "w1-low-gas",
+            "name": "Low Gas?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                750,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "REPLACE_WITH_JARVIS_WEBHOOK_URL",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"embeds\": [{\n    \"title\": \"\u26a0\ufe0f LOW GAS WARNING \u2014 POH Deployer\",\n    \"color\": 16711680,\n    \"description\": \"Deployer wallet has only **{{ $json.deployerBalance }} ETH** remaining.\\nRefill needed for contract interactions.\",\n    \"footer\": { \"text\": \"POH Wallet Monitor\" },\n    \"timestamp\": \"{{ $json.timestamp }}\"\n  }]\n}",
+                "options": {
+                    "timeout": 10000
+                }
+            },
+            "id": "w1-low-gas-alert",
+            "name": "Low Gas Alert",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1000,
+                200
+            ]
+        }
+    ],
+    "connections": {
+        "Every 4 Hours": {
+            "main": [
+                [
+                    {
+                        "node": "Get Deployer Balance",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Get Ledger Balance",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Deployer Balance": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Balances",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Ledger Balance": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Balances",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Balances": {
+            "main": [
+                [
+                    {
+                        "node": "Balance Changed?",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Low Gas?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Balance Changed?": {
+            "main": [
+                [
+                    {
+                        "node": "Discord Alert",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "Low Gas?": {
+            "main": [
+                [
+                    {
+                        "node": "Low Gas Alert",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": null,
+    "versionId": "2e70aef1-df02-4579-a633-9e18140de06a",
+    "activeVersionId": null,
+    "versionCounter": 1,
+    "triggerCount": 0,
+    "shared": [
+        {
+            "updatedAt": "2026-02-28T21:19:07.879Z",
+            "createdAt": "2026-02-28T21:19:07.879Z",
+            "role": "workflow:owner",
+            "workflowId": "aZQhDpXA1HOMwv7s",
+            "projectId": "O4fXgOeIW0SoS9ka",
+            "project": {
+                "updatedAt": "2026-02-28T21:00:36.731Z",
+                "createdAt": "2026-02-28T20:58:03.925Z",
+                "id": "O4fXgOeIW0SoS9ka",
+                "name": "chatura de silva <helpdeskpoh@gmail.com>",
+                "type": "personal",
+                "icon": null,
+                "description": null,
+                "creatorId": "c9b659d8-4f65-4dd6-b32d-a711ff49bbdb"
+            }
+        }
+    ],
+    "tags": [],
+    "activeVersion": null
+}

@@ -330,7 +330,8 @@ RETURNS TABLE (wallet_address TEXT, poh_amount NUMERIC) AS $$
   GROUP BY wallet_address
   ORDER BY poh_amount DESC
   LIMIT limit_count;
-$$ LANGUAGE sql STABLE;
+$$ LANGUAGE sql STABLE
+SET search_path = public;
 
 -- Get an available task for a device (priority-ordered, not already assigned, fewer than 3 assignments)
 CREATE OR REPLACE FUNCTION get_available_task(p_device_id TEXT)
@@ -346,7 +347,8 @@ RETURNS TABLE (task_id UUID, task_type TEXT, payload JSONB, difficulty SMALLINT,
     ) < 3
   ORDER BY ct.priority ASC, ct.created_at ASC
   LIMIT 1;
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql VOLATILE
+SET search_path = public;
 
 -- ── Row Level Security ───────────────────────────────────────
 -- Enable RLS on all tables (Supabase best practice)

@@ -36,6 +36,8 @@ interface MissionControlProps {
   };
   submissionStatus?: "idle" | "verified" | "awaiting" | "failed";
   uptimeStart?: number;
+  pointsStatus?: string | null;
+  pointsMessage?: string | null;
 }
 
 function formatEpoch(epoch: number): string {
@@ -70,6 +72,8 @@ export default function MissionControl({
   lifetimeStats,
   submissionStatus,
   uptimeStart,
+  pointsStatus,
+  pointsMessage,
 }: MissionControlProps) {
   const [log, setLog] = useState<string[]>([]);
   const [uptime, setUptime] = useState(0);
@@ -168,6 +172,18 @@ export default function MissionControl({
           color={connected ? "green" : "red"}
         />
       </div>
+
+      {/* No active epoch warning */}
+      {pointsStatus === "no_active_epoch" && (
+        <div className="border border-yellow-700 rounded p-3 bg-yellow-900/10">
+          <div className="text-yellow-400 text-xs uppercase tracking-widest mb-1">
+            Epoch Unavailable
+          </div>
+          <div className="text-yellow-500 text-xs leading-relaxed">
+            {pointsMessage || "No active mining epoch. Points and streaks will update when the next epoch begins."}
+          </div>
+        </div>
+      )}
 
       {/* Current Task */}
       {isMining && (
@@ -349,6 +365,7 @@ export default function MissionControl({
           label="STREAK"
           value={streak > 0 ? `${streak} days` : "—"}
           color={streak >= 30 ? "green" : streak >= 7 ? "yellow" : "green"}
+          hint="Updates at epoch close (weekly)"
         />
         <TerminalStatus label="DEVICES" value={devices} />
         {batteryLevel !== null && (
@@ -377,9 +394,11 @@ export default function MissionControl({
             <span className="text-green-400 font-bold">
               {points > 0 && stats?.activeNodes
                 ? "Proportional to your points"
-                : isPreLaunchNetwork
-                  ? "Be the first miner — maximum share"
-                  : "Start mining to earn"}
+                : isMining
+                  ? "Mining — earning points..."
+                  : isPreLaunchNetwork
+                    ? "Be the first miner — maximum share"
+                    : "Start mining to earn"}
             </span>
           </div>
           <div className="mt-2 border-t border-green-900 pt-2">

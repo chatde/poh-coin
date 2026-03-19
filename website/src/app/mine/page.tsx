@@ -12,23 +12,21 @@ import { useCompute } from "./hooks/useCompute";
 import { useHeartbeat } from "./hooks/useHeartbeat";
 import { useBattery } from "./hooks/useBattery";
 import { useFitness } from "./hooks/useFitness";
+import { usePoints, useLifetimeStats } from "./hooks/useMiningData";
 
 export default function MinePage() {
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [points, setPoints] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const [epoch, setEpoch] = useState(0);
-  const [deviceCount, setDeviceCount] = useState(0);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [savingsWallet, setSavingsWallet] = useState<string | null>(null);
   const [miningView, setMiningView] = useState<"compute" | "fitness" | "both">("both");
-  const [lifetimeStats, setLifetimeStats] = useState({ verifiedTasks: 0, totalPoints: 0, consensusRate: 0 });
 
   const compute = useCompute(deviceId);
   const heartbeat = useHeartbeat(deviceId);
   const battery = useBattery();
   const fitness = useFitness(walletAddress, deviceId);
+  const { points, streak, epoch, devices: deviceCount, status: pointsStatus, message: pointsMessage } = usePoints(walletAddress);
+  const { lifetimeStats } = useLifetimeStats(deviceId, walletAddress);
 
   // Load device ID from localStorage on mount
   useEffect(() => {
@@ -44,55 +42,6 @@ export default function MinePage() {
       setNeedsSetup(true);
     }
   }, []);
-
-  // Fetch points periodically
-  useEffect(() => {
-    if (!walletAddress) return;
-
-    const fetchPoints = async () => {
-      try {
-        const res = await fetch(`/api/mine/points?address=${walletAddress}`);
-        if (res.ok) {
-          const data = await res.json();
-          setPoints(data.points || 0);
-          setStreak(data.streak || 0);
-          setEpoch(data.epoch || 0);
-          setDeviceCount(data.devices || 0);
-        }
-      } catch {
-        // Will retry
-      }
-    };
-
-    fetchPoints();
-    const interval = setInterval(fetchPoints, 30_000);
-    return () => clearInterval(interval);
-  }, [walletAddress]);
-
-  // Fetch lifetime stats periodically
-  useEffect(() => {
-    if (!deviceId || !walletAddress) return;
-
-    const fetchLifetimeStats = async () => {
-      try {
-        const res = await fetch(`/api/mine/stats?deviceId=${deviceId}&wallet=${walletAddress}`);
-        if (res.ok) {
-          const data = await res.json();
-          setLifetimeStats({
-            verifiedTasks: data.verifiedTasks || 0,
-            totalPoints: data.totalPoints || 0,
-            consensusRate: data.consensusRate || 0,
-          });
-        }
-      } catch {
-        // Will retry
-      }
-    };
-
-    fetchLifetimeStats();
-    const interval = setInterval(fetchLifetimeStats, 30_000);
-    return () => clearInterval(interval);
-  }, [deviceId, walletAddress]);
 
   // Register service worker
   useEffect(() => {
@@ -232,6 +181,8 @@ export default function MinePage() {
               lifetimeStats={lifetimeStats}
               submissionStatus={compute.submissionStatus}
               uptimeStart={compute.uptimeStart ?? undefined}
+              pointsStatus={pointsStatus}
+              pointsMessage={pointsMessage}
             />
           )}
         </div>

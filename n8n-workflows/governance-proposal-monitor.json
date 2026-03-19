@@ -1,0 +1,250 @@
+{
+    "updatedAt": "2026-02-28T21:19:08.729Z",
+    "createdAt": "2026-02-28T21:19:08.729Z",
+    "id": "H7gZMnfbuoK7QB2p",
+    "name": "POH: Governance Proposal Monitor",
+    "description": null,
+    "active": false,
+    "isArchived": false,
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "minutes",
+                            "minutesInterval": 15
+                        }
+                    ]
+                }
+            },
+            "id": "w3-trigger",
+            "name": "Every 15 Minutes",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                0,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "\nconst staticData = $getWorkflowStaticData('global');\nconst fromBlock = staticData.lastBlock || 0;\nreturn [{ json: { fromBlock } }];\n"
+            },
+            "id": "w3-get-block",
+            "name": "Get Last Block",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                250,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "https://api.basescan.org/api?module=logs&action=getLogs&address=0x7C96Ed675033F15a53557f1d0190e00B19522e6e&fromBlock={{ $json.fromBlock }}&toBlock=latest&apikey=REPLACE_WITH_BASESCAN_API_KEY",
+                "options": {
+                    "timeout": 15000
+                }
+            },
+            "id": "w3-get-logs",
+            "name": "Get Governor Logs",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                500,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "\nconst response = $input.first().json;\nconst staticData = $getWorkflowStaticData('global');\n\nconst GOV_EVENTS = {\n  '0x7d84a6263ae0d98d3329bd7b46bb4e8d6f98cd35a7adb45c274c8b7fd5ebd5e0': 'ProposalCreated',\n  '0xb8e138887d0aa13bab447e82de9d5c1777041ecd21ca36ba824ff1e6c07ddda4': 'VoteCast',\n  '0x9a2e42fd6722813d69113e7d0079d3d940171428df7373df9c7f7617cfda2892': 'ProposalQueued',\n  '0x712ae1383f79ac853f8d882153778e0260ef8f03b504e2a0b2e67e07e0c37e1d': 'ProposalExecuted',\n  '0x789cf55be980739dad1d0699b93b58e806b51c9d96619bfa8fe0a28abaa7b30c': 'ProposalCancelled',\n};\n\nif (response.status !== '1' || !response.result || !Array.isArray(response.result) || response.result.length === 0) {\n  return [{ json: { hasEvents: false, events: [] } }];\n}\n\nconst logs = response.result;\nconst maxBlock = Math.max(...logs.map(l => parseInt(l.blockNumber, 16)));\nstaticData.lastBlock = maxBlock + 1;\n\nconst events = logs.map(log => {\n  const topic0 = log.topics[0];\n  const eventType = GOV_EVENTS[topic0] || 'Unknown';\n  const blockNum = parseInt(log.blockNumber, 16);\n  const txHash = log.transactionHash;\n\n  let details = '';\n  if (eventType === 'VoteCast' && log.topics.length >= 2) {\n    const voter = '0x' + log.topics[1].slice(26);\n    details = `Voter: ${voter.slice(0, 10)}...`;\n  } else if (eventType === 'ProposalCreated') {\n    details = 'New governance proposal submitted';\n  } else if (eventType === 'ProposalExecuted') {\n    details = 'Proposal has been executed';\n  } else if (eventType === 'ProposalQueued') {\n    details = 'Proposal queued for execution';\n  } else if (eventType === 'ProposalCancelled') {\n    details = 'Proposal has been cancelled';\n  }\n\n  return { eventType, blockNumber: blockNum, txHash, details };\n});\n\nreturn [{ json: { hasEvents: true, events, count: events.length } }];\n"
+            },
+            "id": "w3-parse",
+            "name": "Parse Governor Events",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                750,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "has-events",
+                            "leftValue": "={{ $json.hasEvents }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "or"
+                }
+            },
+            "id": "w3-if",
+            "name": "New Events?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                1000,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "\nconst data = $input.first().json;\nconst events = data.events;\n\nconst colorMap = {\n  ProposalCreated: 3066993,    // green\n  VoteCast: 3447003,           // blue\n  ProposalQueued: 15105570,    // orange\n  ProposalExecuted: 10181046,  // purple\n  ProposalCancelled: 15158332, // red\n  Unknown: 9807270,            // grey\n};\n\nconst fields = events.slice(0, 10).map(e => ({\n  name: e.eventType,\n  value: `${e.details}\\n[View tx](https://basescan.org/tx/${e.txHash}) | Block ${e.blockNumber}`,\n  inline: false\n}));\n\nconst primaryColor = events.length > 0 ? (colorMap[events[0].eventType] || 3447003) : 3447003;\n\nreturn [{ json: {\n  embeds: [{\n    title: '\u2696\ufe0f POH Governance Activity',\n    color: primaryColor,\n    description: `${data.count} new governance event(s) detected.`,\n    fields,\n    footer: { text: 'POH Governance Monitor' },\n    timestamp: new Date().toISOString()\n  }]\n}}];\n"
+            },
+            "id": "w3-format",
+            "name": "Format Discord Message",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1250,
+                -50
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "REPLACE_WITH_GOVERNANCE_WEBHOOK_URL",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify($json) }}",
+                "options": {
+                    "timeout": 10000
+                }
+            },
+            "id": "w3-discord",
+            "name": "Post to Discord",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1500,
+                -50
+            ]
+        }
+    ],
+    "connections": {
+        "Every 15 Minutes": {
+            "main": [
+                [
+                    {
+                        "node": "Get Last Block",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Last Block": {
+            "main": [
+                [
+                    {
+                        "node": "Get Governor Logs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Governor Logs": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Governor Events",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Governor Events": {
+            "main": [
+                [
+                    {
+                        "node": "New Events?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "New Events?": {
+            "main": [
+                [
+                    {
+                        "node": "Format Discord Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "Format Discord Message": {
+            "main": [
+                [
+                    {
+                        "node": "Post to Discord",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": null,
+    "versionId": "714908eb-a0e4-460b-9d8f-1d0ea833b077",
+    "activeVersionId": null,
+    "versionCounter": 1,
+    "triggerCount": 0,
+    "shared": [
+        {
+            "updatedAt": "2026-02-28T21:19:08.732Z",
+            "createdAt": "2026-02-28T21:19:08.732Z",
+            "role": "workflow:owner",
+            "workflowId": "H7gZMnfbuoK7QB2p",
+            "projectId": "O4fXgOeIW0SoS9ka",
+            "project": {
+                "updatedAt": "2026-02-28T21:00:36.731Z",
+                "createdAt": "2026-02-28T20:58:03.925Z",
+                "id": "O4fXgOeIW0SoS9ka",
+                "name": "chatura de silva <helpdeskpoh@gmail.com>",
+                "type": "personal",
+                "icon": null,
+                "description": null,
+                "creatorId": "c9b659d8-4f65-4dd6-b32d-a711ff49bbdb"
+            }
+        }
+    ],
+    "tags": [],
+    "activeVersion": null
+}

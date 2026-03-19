@@ -63,7 +63,9 @@ export async function GET(req: NextRequest) {
         .select("points_earned, quality_verified")
         .in("device_id", deviceIds);
 
-      if (!proofsError && proofs) {
+      if (proofsError) {
+        console.error("[stats] proofs query failed:", proofsError.message, { deviceIds });
+      } else if (proofs) {
         totalPoints = proofs.reduce(
           (sum: number, p: { points_earned: number | string; quality_verified: boolean }) =>
             sum + Number(p.points_earned),
@@ -74,7 +76,6 @@ export async function GET(req: NextRequest) {
             p.quality_verified,
         ).length;
       }
-      // If proofsError (e.g. table missing), both fields stay at 0
     }
 
     // ── consensusRate from task_assignments ───────────────────────────
@@ -87,17 +88,19 @@ export async function GET(req: NextRequest) {
         .in("device_id", deviceIds)
         .not("submitted_at", "is", null);
 
-      if (!assignError && assignments && assignments.length > 0) {
+      if (assignError) {
+        console.error("[stats] task_assignments query failed:", assignError.message, { deviceIds });
+      } else if (assignments && assignments.length > 0) {
         const matchedCount = assignments.filter(
           (a: { is_match: boolean | null }) => a.is_match === true,
         ).length;
         consensusRate = matchedCount / assignments.length;
       }
-      // If assignError (e.g. table missing) or no rows, consensusRate stays at 0
     }
 
     return NextResponse.json({ verifiedTasks, totalPoints, consensusRate });
-  } catch {
+  } catch (err) {
+    console.error("[stats] unhandled error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -42,7 +42,8 @@ RETURNS TABLE (
     ) < 3
   ORDER BY ct.priority ASC, ct.created_at ASC
   LIMIT 1;
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql VOLATILE
+SET search_path = public;
 
 -- ── Add previous_epoch_wus column to fah_links ───────────────
 -- Used by epoch-close to compute delta WUs per epoch rather than

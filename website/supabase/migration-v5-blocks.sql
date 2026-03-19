@@ -119,7 +119,7 @@ CREATE POLICY "Users can read their own BOINC links"
 
 CREATE POLICY "Users can insert their own BOINC links"
   ON boinc_links FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (auth.role() = 'authenticated');
 
 CREATE POLICY "Users can update their own BOINC links"
   ON boinc_links FOR UPDATE
@@ -162,7 +162,8 @@ BEGIN
   ORDER BY eb.blocks_mined DESC, eb.poh_earned DESC
   LIMIT limit_count;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql
+SET search_path = public;
 
 -- Function to get recent blocks
 CREATE OR REPLACE FUNCTION get_recent_blocks(limit_count integer DEFAULT 20)
@@ -185,7 +186,8 @@ BEGIN
   ORDER BY b.height DESC
   LIMIT limit_count;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql
+SET search_path = public;
 
 -- Function to get miner statistics
 CREATE OR REPLACE FUNCTION get_miner_stats(wallet text)
@@ -207,7 +209,8 @@ BEGIN
   FROM blocks b
   WHERE b.solver_wallet = wallet;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql
+SET search_path = public;
 
 -- ============================================================================
 -- Migration Complete

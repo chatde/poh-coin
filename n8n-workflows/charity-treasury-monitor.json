@@ -1,0 +1,250 @@
+{
+    "updatedAt": "2026-02-28T21:19:08.703Z",
+    "createdAt": "2026-02-28T21:19:08.703Z",
+    "id": "kpGwPO775TjbP3bn",
+    "name": "POH: Charity Treasury Monitor",
+    "description": null,
+    "active": false,
+    "isArchived": false,
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "minutes",
+                            "minutesInterval": 15
+                        }
+                    ]
+                }
+            },
+            "id": "w2-trigger",
+            "name": "Every 15 Minutes",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                0,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "\nconst staticData = $getWorkflowStaticData('global');\nconst fromBlock = staticData.lastBlock || 'latest';\n// We'll fetch the current block first, then get logs\nreturn [{ json: { fromBlock } }];\n"
+            },
+            "id": "w2-get-block",
+            "name": "Get Last Block",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                250,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "https://api.basescan.org/api?module=logs&action=getLogs&address=0xf9eDc5CF986ea637E724E078DA01AbD7c4957D49&fromBlock={{ $json.fromBlock === 'latest' ? 0 : $json.fromBlock }}&toBlock=latest&apikey=REPLACE_WITH_BASESCAN_API_KEY",
+                "options": {
+                    "timeout": 15000
+                }
+            },
+            "id": "w2-get-logs",
+            "name": "Get Charity Logs",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                500,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "\nconst response = $input.first().json;\nconst staticData = $getWorkflowStaticData('global');\n\nif (response.status !== '1' || !response.result || !Array.isArray(response.result)) {\n  // No new events or error\n  return [{ json: { hasEvents: false, events: [] } }];\n}\n\nconst logs = response.result;\nif (logs.length === 0) {\n  return [{ json: { hasEvents: false, events: [] } }];\n}\n\n// Update last block to highest block + 1\nconst maxBlock = Math.max(...logs.map(l => parseInt(l.blockNumber, 16)));\nstaticData.lastBlock = maxBlock + 1;\n\n// Parse known events\n// ProposalCreated(uint256 proposalId, address recipient, uint256 amount, string description)\n// topic0 for ProposalCreated \u2014 compute from ABI\nconst PROPOSAL_CREATED_SIG = '0x' + logs[0]?.topics?.[0]?.slice(2) || ''; // We'll match by position\n\nconst events = logs.map(log => {\n  const topic0 = log.topics[0];\n  const blockNum = parseInt(log.blockNumber, 16);\n  const txHash = log.transactionHash;\n\n  // ProposalCreated has 4 topics: event sig, proposalId (indexed)\n  // ProposalExecuted has 2 topics: event sig, proposalId (indexed)\n  // ProposalCancelled has 2 topics: event sig, proposalId (indexed)\n\n  let eventType = 'Unknown';\n  let proposalId = 'N/A';\n\n  if (log.topics.length >= 2) {\n    proposalId = parseInt(log.topics[1], 16).toString();\n  }\n\n  // Match by data length heuristic + topic count\n  // ProposalCreated has longer data (recipient address + amount + description)\n  if (log.data.length > 130) {\n    eventType = 'ProposalCreated';\n  } else if (log.data === '0x' && log.topics.length === 2) {\n    // Could be Executed or Cancelled \u2014 we'll label generically\n    eventType = 'ProposalStatusChange';\n  }\n\n  return {\n    eventType,\n    proposalId,\n    blockNumber: blockNum,\n    txHash,\n    data: log.data,\n  };\n});\n\nreturn [{ json: { hasEvents: true, events, count: events.length } }];\n"
+            },
+            "id": "w2-parse",
+            "name": "Parse Charity Events",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                750,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "has-events",
+                            "leftValue": "={{ $json.hasEvents }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "or"
+                }
+            },
+            "id": "w2-if",
+            "name": "New Events?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                1000,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "\nconst data = $input.first().json;\nconst events = data.events;\n\nconst fields = events.slice(0, 5).map((e, i) => ({\n  name: `${e.eventType} #${e.proposalId}`,\n  value: `Block ${e.blockNumber} | [tx](https://basescan.org/tx/${e.txHash})`,\n  inline: false\n}));\n\nconst embed = {\n  embeds: [{\n    title: '\ud83c\udfdb\ufe0f POH Charity \u2014 New Activity',\n    color: 15844367,\n    description: `${data.count} new event(s) detected on the Charity contract.`,\n    fields,\n    footer: { text: 'POH Charity Monitor' },\n    timestamp: new Date().toISOString()\n  }]\n};\n\nreturn [{ json: embed }];\n"
+            },
+            "id": "w2-format",
+            "name": "Format Discord Message",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1250,
+                -50
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "REPLACE_WITH_GOVERNANCE_WEBHOOK_URL",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify($json) }}",
+                "options": {
+                    "timeout": 10000
+                }
+            },
+            "id": "w2-discord",
+            "name": "Post to Discord",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1500,
+                -50
+            ]
+        }
+    ],
+    "connections": {
+        "Every 15 Minutes": {
+            "main": [
+                [
+                    {
+                        "node": "Get Last Block",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Last Block": {
+            "main": [
+                [
+                    {
+                        "node": "Get Charity Logs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Charity Logs": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Charity Events",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Charity Events": {
+            "main": [
+                [
+                    {
+                        "node": "New Events?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "New Events?": {
+            "main": [
+                [
+                    {
+                        "node": "Format Discord Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "Format Discord Message": {
+            "main": [
+                [
+                    {
+                        "node": "Post to Discord",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": null,
+    "versionId": "89cb6f3d-3fca-48fa-b6d6-472d21c721ab",
+    "activeVersionId": null,
+    "versionCounter": 1,
+    "triggerCount": 0,
+    "shared": [
+        {
+            "updatedAt": "2026-02-28T21:19:08.704Z",
+            "createdAt": "2026-02-28T21:19:08.704Z",
+            "role": "workflow:owner",
+            "workflowId": "kpGwPO775TjbP3bn",
+            "projectId": "O4fXgOeIW0SoS9ka",
+            "project": {
+                "updatedAt": "2026-02-28T21:00:36.731Z",
+                "createdAt": "2026-02-28T20:58:03.925Z",
+                "id": "O4fXgOeIW0SoS9ka",
+                "name": "chatura de silva <helpdeskpoh@gmail.com>",
+                "type": "personal",
+                "icon": null,
+                "description": null,
+                "creatorId": "c9b659d8-4f65-4dd6-b32d-a711ff49bbdb"
+            }
+        }
+    ],
+    "tags": [],
+    "activeVersion": null
+}

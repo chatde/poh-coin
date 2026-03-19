@@ -392,6 +392,73 @@ export default function Home() {
       {/* Gradient divider */}
       <div className="h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
 
+      {/* ═══════════════════ POH IN 30 SECONDS ═══════════════════ */}
+      <section className="py-24 sm:py-32">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <FadeIn>
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
+                POH in{" "}
+                <span className="gradient-text-animated">30 Seconds</span>
+              </h2>
+              <p className="mt-4 text-lg text-foreground/60">
+                No jargon. No catch. Here&rsquo;s how it works.
+              </p>
+            </div>
+          </FadeIn>
+
+          <StaggerParent className="mt-16 grid gap-8 sm:grid-cols-3">
+            {/* Card 1 — Mine on Your Phone */}
+            <StaggerChild>
+              <TiltCard className="group relative overflow-hidden rounded-2xl border border-foreground/10 bg-white/[0.03] p-8 backdrop-blur-sm transition-colors hover:border-accent/30">
+                <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10">
+                  <IconCpu className="h-6 w-6 text-accent-light" />
+                </div>
+                <h3 className="text-xl font-bold">Mine on Your Phone</h3>
+                <p className="mt-3 text-sm leading-relaxed text-foreground/60">
+                  POH lets you earn crypto by contributing computing power from
+                  any device&nbsp;&mdash; your phone, laptop, or tablet. No
+                  expensive equipment needed.
+                </p>
+              </TiltCard>
+            </StaggerChild>
+
+            {/* Card 2 — Fund Real Causes */}
+            <StaggerChild>
+              <TiltCard className="group relative overflow-hidden rounded-2xl border border-foreground/10 bg-white/[0.03] p-8 backdrop-blur-sm transition-colors hover:border-charity-green/30">
+                <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-charity-green/10">
+                  <IconHeart className="h-6 w-6 text-charity-green" />
+                </div>
+                <h3 className="text-xl font-bold">Fund Real Causes</h3>
+                <p className="mt-3 text-sm leading-relaxed text-foreground/60">
+                  Every transaction sends funds to environmental, health, and
+                  education charities. Your mining directly helps people,
+                  animals, and the planet.
+                </p>
+              </TiltCard>
+            </StaggerChild>
+
+            {/* Card 3 — Voyager-Linked Tokenomics */}
+            <StaggerChild>
+              <TiltCard className="group relative overflow-hidden rounded-2xl border border-foreground/10 bg-white/[0.03] p-8 backdrop-blur-sm transition-colors hover:border-voyager-gold/30">
+                <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-voyager-gold/10">
+                  <IconEye className="h-6 w-6 text-voyager-gold" />
+                </div>
+                <h3 className="text-xl font-bold">Voyager-Linked Rarity</h3>
+                <p className="mt-3 text-sm leading-relaxed text-foreground/60">
+                  Mining difficulty follows Voyager&nbsp;1&rsquo;s journey
+                  through space&nbsp;&mdash; the further it travels, the rarer
+                  POH becomes. A cosmic countdown built into every coin.
+                </p>
+              </TiltCard>
+            </StaggerChild>
+          </StaggerParent>
+        </div>
+      </section>
+
+      {/* Gradient divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
+
       {/* ═══════════════════ SECTION 2 — OUR MISSION ═══════════════════ */}
       <ParallaxSection className="py-28 sm:py-36">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

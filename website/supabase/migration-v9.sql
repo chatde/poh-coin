@@ -26,10 +26,14 @@ CREATE INDEX idx_charity_applications_created  ON charity_applications(created_a
 -- RLS
 ALTER TABLE charity_applications ENABLE ROW LEVEL SECURITY;
 
--- Anyone can submit an application (public INSERT)
+-- Anyone can submit an application (public INSERT — must arrive as 'pending')
 CREATE POLICY "Anyone can submit charity application"
   ON charity_applications FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (
+    status = 'pending'
+    AND contact_email IS NOT NULL
+    AND length(contact_email) >= 5
+  );
 
 -- No public reads — reviewed via service_role only
 -- (Admins access via Supabase dashboard / service_role key)
@@ -50,15 +54,19 @@ CREATE INDEX idx_newsletter_email ON newsletter_subscribers(email);
 -- RLS
 ALTER TABLE newsletter_subscribers ENABLE ROW LEVEL SECURITY;
 
--- Anyone can subscribe
+-- Anyone can subscribe (must give consent)
 CREATE POLICY "Anyone can subscribe to newsletter"
   ON newsletter_subscribers FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (
+    consent_given = true
+    AND email IS NOT NULL
+    AND unsubscribed_at IS NULL
+  );
 
--- Subscribers can unsubscribe (update own row by email)
+-- Subscribers can unsubscribe — row must be active, result must set unsubscribed_at
 CREATE POLICY "Subscribers can unsubscribe"
   ON newsletter_subscribers FOR UPDATE
-  USING (true)
-  WITH CHECK (true);
+  USING (unsubscribed_at IS NULL)
+  WITH CHECK (unsubscribed_at IS NOT NULL);
 
 -- No public SELECT — list managed via service_role
