@@ -38,6 +38,9 @@ export default function SetupPage() {
     const providerParam = params.get("provider");
     const stepParam = params.get("step");
 
+    // SECURITY: Clear any previously stored mnemonic (legacy)
+    localStorage.removeItem("poh-mnemonic");
+
     // If redirected back from OAuth callback
     if (fitnessResult === "success" && providerParam) {
       // Restore wallet/device from localStorage
@@ -146,8 +149,11 @@ export default function SetupPage() {
       const address = wallet.address;
       const mnemonic = wallet.mnemonic?.phrase || "";
 
-      localStorage.setItem("poh-mnemonic", mnemonic);
+      // Store wallet address (public — safe in localStorage)
       localStorage.setItem("poh-wallet", address);
+      // SECURITY: Do NOT store mnemonic in localStorage
+      // Show it once for user to write down, then discard from memory
+      // Previously: localStorage.setItem("poh-mnemonic", mnemonic);
 
       const newDeviceId = generateDeviceId();
       localStorage.setItem("poh-device-id", newDeviceId);
