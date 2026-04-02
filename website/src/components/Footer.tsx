@@ -161,21 +161,21 @@ export function Footer() {
             <span>&copy; {currentYear} Project POH. All rights reserved.</span>
             <span className="text-foreground/20">&middot;</span>
             <a
-              href="https://ghb.ventures"
+              href="https://projectpoh.com"
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-accent-light"
             >
-              GHB Ventures
+              projectpoh.com
             </a>
             <span className="text-foreground/20">&middot;</span>
             <a
-              href="https://chatde.dev"
+              href="mailto:contact@projectpoh.com"
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-accent-light"
             >
-              chatde.dev
+              contact@projectpoh.com
             </a>
           </div>
         </div>
