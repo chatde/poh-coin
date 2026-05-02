@@ -474,32 +474,62 @@ export default function WhitepaperPage() {
           </p>
         </Section>
 
-        {/* ── Voyager 2 Fork ── */}
-        <Section id="voyager-2-fork" title="Voyager 2 Fork">
+        {/* ── The Voyager Continuation Mission ── */}
+        <Section id="voyager-continuation" title="The Voyager Continuation Mission">
           <p>
-            When Voyager&nbsp;1 is decommissioned, the POH community will have the
-            option to fork the protocol to a new chain tied to{" "}
-            <strong>Voyager&nbsp;2&rsquo;s distance</strong>.
+            When Voyager&nbsp;1 goes silent, POH does not fork to Voyager&nbsp;2.
+            Instead, the project enters its most ambitious phase:{" "}
+            <strong className="text-voyager-gold">Version&nbsp;2 of the Voyager Project</strong>.
           </p>
-          <ul className="mt-6 list-disc space-y-3 pl-6 marker:text-accent-light">
+          <p className="mt-4">
+            The POH DAO will propose and fund the design, build, and launch of an{" "}
+            <strong>AI-guided autonomous probe</strong> to intercept Voyager&nbsp;1,
+            update its systems, and continue the original mission &mdash; carrying
+            humanity&rsquo;s furthest artifact deeper into interstellar space.
+          </p>
+
+          <h3 className="mt-6 text-lg font-semibold text-accent-light">
+            The New Fork
+          </h3>
+          <p className="mt-3">
+            Once the continuation probe launches, the POH protocol forks to a new
+            block model determined by the <strong>probe&rsquo;s trajectory and
+            velocity</strong> &mdash; replacing Voyager&nbsp;1&rsquo;s distance as the
+            chain&rsquo;s heartbeat. The specifics of this fork (block cadence, distance
+            formula, reward curve) will be proposed and ratified by the governance body
+            when the mission parameters are known.
+          </p>
+
+          <h3 className="mt-6 text-lg font-semibold text-accent-light">
+            Why Not Voyager&nbsp;2?
+          </h3>
+          <ul className="mt-3 list-disc space-y-3 pl-6 marker:text-accent-light">
             <li>
-              <strong>New expanding supply</strong> based on Voyager&nbsp;2&rsquo;s
-              ongoing journey.
+              Voyager&nbsp;2 is a separate spacecraft on a different trajectory &mdash;
+              tying POH to it would be a lateral move, not a continuation.
             </li>
             <li>
-              <strong>Same dual-work mining model</strong> &mdash; science tasks + block
-              equation.
+              The soul of POH is <strong>pushing further</strong>, not switching targets.
+              Launching a new probe to catch and extend Voyager&nbsp;1 embodies that
+              mission.
             </li>
             <li>
-              <strong>Smooth transition for miners</strong> &mdash; existing V1 miners
-              can migrate to V2 without retooling infrastructure.
-            </li>
-            <li>
-              This is a <strong>10-20 year horizon</strong>. Voyager&nbsp;2 will outlive
-              Voyager&nbsp;1 by several years. The fork is not built today but planned
-              as a future governance decision.
+              An AI intercept mission represents the next evolutionary step: from
+              passively tracking a 1977 spacecraft to actively extending its legacy with
+              21st-century technology.
             </li>
           </ul>
+
+          <h3 className="mt-6 text-lg font-semibold text-accent-light">
+            Governance
+          </h3>
+          <p className="mt-3">
+            All decisions regarding the continuation mission &mdash; probe design,
+            launch timeline, trajectory parameters, and the resulting protocol fork
+            &mdash; are deferred to the <strong>POH DAO governance body</strong>. The
+            community votes on mission proposals once the Voyager Chase Fund is
+            activated.
+          </p>
         </Section>
 
         {/* ── Security ── */}
@@ -663,7 +693,7 @@ export default function WhitepaperPage() {
             />
             <RoadmapPhase
               phase="Phase 7"
-              title="Voyager 2 Fork"
+              title="Voyager Continuation Mission"
               last
             />
           </ol>
